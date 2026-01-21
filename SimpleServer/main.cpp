@@ -1,11 +1,31 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <thread>
 #include <stdio.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
 #define PORT "8888"
 #define BUFFER_LEN 512
+
+using namespace std;
+
+DWORD WINAPI IOCPWorkerThread(LPVOID lpParam);
+
+enum OperationType
+{
+    OP_ACCEPT,
+	OP_READ,
+	OP_WRITE
+};
+
+struct IOCPData
+{
+    OVERLAPPED overlapped;
+    OperationType operationType;
+    SOCKET socket;
+    char buffer[BUFFER_LEN];
+};
 
 int main()
 {
@@ -69,6 +89,13 @@ int main()
 
     printf("서버가 시작되었습니다. 클라이언트 연결을 기다립니다...\n");
 
+    const int ioThreadCount = thread::hardware_concurrency() * 2;
+    for (int i = 0; i < ioThreadCount; i++)
+    {
+        DWORD ThreadId;
+        HANDLE hThread = CreateThread(NULL, 0, IOCPWorkerThread, hPort, 0, &ThreadId);
+    }
+
     SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
     if (ClientSocket == INVALID_SOCKET)
     {
@@ -79,6 +106,8 @@ int main()
     }
 
     printf("클라이언트가 연결되었습니다.\n");
+
+
 
     char recvbuf[BUFFER_LEN];
     int recvbuflen = BUFFER_LEN;
@@ -117,4 +146,44 @@ int main()
     WSACleanup();
 
     return 0;
+}
+
+DWORD WINAPI IOCPWorkerThread(LPVOID lpParam)
+{
+    DWORD bytesTransferred;
+    PULONG_PTR lpCompletionKey;
+    IOCPData pOverlapped;
+    int iResult, iSendResult;
+
+    do
+    {
+        if (!GetQueuedCompletionStatus((HANDLE)lpParam, &bytesTransferred, lpCompletionKey, (LPOVERLAPPED*)&pOverlapped, 0))
+        {
+            continue;
+        }
+        iResult = recv(pOverlapped.socket, pOverlapped.buffer, bytesTransferred, 0);
+        if (iResult > 0)
+        {
+            printf("수신된 바이트: %d\n", iResult);
+
+            iSendResult = send(pOverlapped.socket, pOverlapped.buffer, iResult, 0);
+            if (iSendResult == SOCKET_ERROR)
+            {
+                printf("send failed: %d\n", WSAGetLastError());
+                closesocket(pOverlapped.socket);
+                WSACleanup();
+                return 1;
+            }
+            printf("전송된 바이트: %d\n", iSendResult);
+        }
+        else if (iResult == 0)
+            printf("연결 종료\n");
+        else
+        {
+            printf("recv failed: %d\n", WSAGetLastError());
+            closesocket(pOverlapped.socket);
+            WSACleanup();
+            return 1;
+        }
+    } while (true);
 }
