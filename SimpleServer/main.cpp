@@ -55,6 +55,10 @@ int main()
 
     freeaddrinfo(result);
 
+    int id;
+    HANDLE hPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+    HANDLE port = CreateIoCompletionPort(socket, hPort, (ULONG_PTR)id, 0);
+
     if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
     {
         printf("Listen failed with error: %ld\n", WSAGetLastError());
