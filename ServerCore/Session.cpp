@@ -2,11 +2,12 @@
 #include "IPacketHandler.h"
 #include "Packet.h"
 #include "NetService.h"
+#include <iostream>
 
-Session::Session(SOCKET s, HANDLE iocp, IPacketHandler& packetHandler, NetService& owner)
-    : _sock(s), _iocp(iocp), _packetHandler(packetHandler), _owner(owner)
+Session::Session(SOCKET s, IPacketHandler& packetHandler, NetService& owner)
+    : _sock(s), _packetHandler(packetHandler), _owner(owner)
 {
-    _recvStream.reserve(8192);
+    _recvStream.reserve(MAX_RECV_STREAM_SIZE);
 }
 
 Session::~Session()
@@ -17,6 +18,7 @@ Session::~Session()
 
 void Session::Start()
 {
+    std::cout << "[Session] 세션 연결됨\n";
     _owner.NotifyConnected(*this);
     PostRecv();
 }
@@ -34,8 +36,24 @@ void Session::Close()
         _sock = INVALID_SOCKET;
     }
 
+    {
+        std::lock_guard<std::mutex> lock(_sendLock);
+        _sendQ.clear();
+        _sending = false;
+    }
+
+    _recvStream.clear();
+    _recvStream.shrink_to_fit();
+
+    std::cout << "[Session] 세션 종료됨\n";
     _owner.NotifyDisconnected(*this);
     Release();
+}
+
+void Session::CloseWithLog(const char* reason)
+{
+    std::cout << "[Session] " << reason << " — 연결 종료\n";
+    Close();
 }
 
 void Session::AddRef()
@@ -56,22 +74,47 @@ void Session::PostRecv()
 
     AddRef();
 
-    auto* ctx = new IoContext(IOType::RECV);
+    auto ctx = std::make_unique<IoContext>(IOType::RECV);
 
     DWORD flags = 0;
     DWORD bytes = 0;
     int ret = WSARecv(_sock, &ctx->wsaBuf, 1, &bytes, &flags, &ctx->overlapped, nullptr);
 
-    if (ret == SOCKET_ERROR)
+    if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
     {
-        const int err = WSAGetLastError();
-        if (err != WSA_IO_PENDING)
-        {
-            delete ctx;
-            Release();
-            Close();
-        }
+        Release();
+        Close();
+        return;
     }
+
+    ctx.release();
+}
+
+bool Session::PostSendFront_NoLock()
+{
+    if (_sendQ.empty() || _closing.load(std::memory_order_acquire))
+    {
+        _sending = false;
+        return true;
+    }
+
+    AddRef();
+
+    auto ctx = std::make_unique<IoContext>(IOType::SEND);
+    ctx->BindSendBuffer(_sendQ.front());
+
+    DWORD bytes = 0;
+    int ret = WSASend(_sock, &ctx->wsaBuf, 1, &bytes, 0, &ctx->overlapped, nullptr);
+
+    if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
+    {
+        Release();
+        _sending = false;
+        return false;
+    }
+
+    ctx.release();
+    return true;
 }
 
 void Session::EnqueueSend(const SendBufferRef& sendBuffer)
@@ -82,14 +125,29 @@ void Session::EnqueueSend(const SendBufferRef& sendBuffer)
     if (_closing.load(std::memory_order_acquire))
         return;
 
-    std::lock_guard<std::mutex> lock(_sendLock);
-    _sendQ.push_back(sendBuffer);
+    bool needClose = false;
+    {
+        std::lock_guard<std::mutex> lock(_sendLock);
 
-    if (_sending)
-        return;
+        if (_sendQ.size() >= MAX_SEND_QUEUE_SIZE)
+        {
+            needClose = true;
+        }
+        else
+        {
+            _sendQ.push_back(sendBuffer);
 
-    _sending = true;
-    PostSendFront_NoLock();
+            if (!_sending)
+            {
+                _sending = true;
+                if (!PostSendFront_NoLock())
+                    needClose = true;
+            }
+        }
+    }
+
+    if (needClose)
+        CloseWithLog("송신 큐 한계 초과");
 }
 
 void Session::EnqueueSend(std::vector<char>&& packet)
@@ -98,48 +156,27 @@ void Session::EnqueueSend(std::vector<char>&& packet)
     EnqueueSend(sendBuffer);
 }
 
-void Session::PostSendFront_NoLock()
-{
-    if (_sendQ.empty() || _closing.load(std::memory_order_acquire))
-    {
-        _sending = false;
-        return;
-    }
-
-    AddRef();
-
-    auto* ctx = new IoContext(IOType::SEND);
-    ctx->BindSendBuffer(_sendQ.front());
-
-    DWORD bytes = 0;
-    int ret = WSASend(_sock, &ctx->wsaBuf, 1, &bytes, 0, &ctx->overlapped, nullptr);
-
-    if (ret == SOCKET_ERROR)
-    {
-        const int err = WSAGetLastError();
-        if (err != WSA_IO_PENDING)
-        {
-            delete ctx;
-            Release();
-            Close();
-        }
-    }
-}
-
 void Session::OnSendComplete()
 {
-    std::lock_guard<std::mutex> lock(_sendLock);
-
-    if (!_sendQ.empty())
-        _sendQ.pop_front();
-
-    if (_sendQ.empty() || _closing.load(std::memory_order_acquire))
+    bool needClose = false;
     {
-        _sending = false;
-        return;
+        std::lock_guard<std::mutex> lock(_sendLock);
+
+        if (!_sendQ.empty())
+            _sendQ.pop_front();
+
+        if (_sendQ.empty() || _closing.load(std::memory_order_acquire))
+        {
+            _sending = false;
+            return;
+        }
+
+        if (!PostSendFront_NoLock())
+            needClose = true;
     }
 
-    PostSendFront_NoLock();
+    if (needClose)
+        CloseWithLog("송신 실패");
 }
 
 void Session::OnRecvComplete(const char* data, int len)
@@ -157,15 +194,27 @@ void Session::OnRecvComplete(const char* data, int len)
         if (result == PacketReadResult::Incomplete)
             break;
 
+        if (result == PacketReadResult::InvalidHeader)
+        {
+            CloseWithLog("잘못된 패킷 헤더");
+            return;
+        }
+
+        if (result == PacketReadResult::PacketTooLarge)
+        {
+            CloseWithLog("패킷 크기 초과");
+            return;
+        }
+
         if (result != PacketReadResult::Success)
         {
-            Close();
+            CloseWithLog("알 수 없는 패킷 오류");
             return;
         }
 
         if (!_packetHandler.HandlePacket(*this, pkt))
         {
-            Close();
+            CloseWithLog("핸들러 처리 실패");
             return;
         }
 

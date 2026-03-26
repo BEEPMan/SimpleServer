@@ -13,8 +13,8 @@ public:
 
 private:
     bool HandleChat(Session& session, const Packet& pkt);
-    bool HandlePing(Session& session, const Packet& pkt);
-    bool HandlePong(Session& session, const Packet& pkt);
+    bool HandlePing(Session& session, const Packet&);
+    bool HandlePong(Session&, const Packet&);
 
 private:
     NetService* _service = nullptr;

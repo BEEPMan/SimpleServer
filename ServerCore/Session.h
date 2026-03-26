@@ -14,7 +14,7 @@ class NetService;
 class Session
 {
 public:
-    Session(SOCKET s, HANDLE iocp, IPacketHandler& packetHandler, NetService& owner);
+    Session(SOCKET s, IPacketHandler& packetHandler, NetService& owner);
     ~Session();
 
     SOCKET GetSocket() const { return _sock; }
@@ -36,12 +36,14 @@ public:
     NetService& GetService() { return _owner; }
 
 private:
+    static constexpr size_t MAX_SEND_QUEUE_SIZE = 64;
+
     void PostRecv();
-    void PostSendFront_NoLock();
+    bool PostSendFront_NoLock(); // true = 성공(IO_PENDING 포함), false = WSASend 실패
+    void CloseWithLog(const char* reason);
 
 private:
     SOCKET _sock = INVALID_SOCKET;
-    HANDLE _iocp = nullptr;
     IPacketHandler& _packetHandler;
     NetService& _owner;
 

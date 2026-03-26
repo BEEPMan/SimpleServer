@@ -5,7 +5,7 @@
 #include "Opcodes.h"
 
 #include <iostream>
-#include <string>
+#include <string_view>
 
 bool ServerPacketHandler::HandlePacket(Session& session, const Packet& pkt)
 {
@@ -14,7 +14,7 @@ bool ServerPacketHandler::HandlePacket(Session& session, const Packet& pkt)
     case OP_CHAT: return HandleChat(session, pkt);
     case OP_PING: return HandlePing(session, pkt);
     case OP_PONG: return HandlePong(session, pkt);
-    default:           return false;
+    default:      return false;
     }
 }
 
@@ -23,13 +23,11 @@ bool ServerPacketHandler::HandleChat(Session&, const Packet& pkt)
     if (_service == nullptr)
         return false;
 
-    std::string msg;
-    if (pkt.payloadLen > 0 && pkt.payload)
-        msg.assign(pkt.payload, pkt.payload + pkt.payloadLen);
+    const std::string_view msg(pkt.payload.data(), pkt.payload.size());
 
-    std::cout << "[Server] Chat received: " << msg << "\n";
+    std::cout << "[서버] 채팅 수신: " << msg << "\n";
 
-    auto out = MakePacket(OP_CHAT, msg.data(), static_cast<uint16_t>(msg.size()));
+    auto out = MakePacket(OP_CHAT, pkt.payload.data(), static_cast<uint16_t>(pkt.payload.size()));
     _service->Broadcast(std::move(out));
     return true;
 }

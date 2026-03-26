@@ -47,6 +47,7 @@ private:
     void WorkerLoop();
 
     bool InitIocpAndWorkers(int workerCount);
+    bool CreateAndRegisterSession(SOCKET sock);
     void AddSession(Session* session);
     void RemoveSession(Session* session);
 

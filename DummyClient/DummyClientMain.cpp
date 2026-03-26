@@ -1,12 +1,9 @@
 #include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <windows.h>
 
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <chrono>
-#include <memory>
 #include <string>
 
 #include "NetService.h"
@@ -35,24 +32,24 @@ void RunDummyBot(int id, const char* ip, uint16_t port)
 
     bot.service.SetOnConnected([&bot](Session& session)
         {
-            std::cout << "[Dummy " << bot.id << "] connected\n";
+            std::cout << "[더미 " << bot.id << "] 접속됨\n";
             session.EnqueueSend(MakePacket(OP_PING));
         });
 
     bot.service.SetOnDisconnected([&bot](Session&)
         {
-            std::cout << "[Dummy " << bot.id << "] disconnected\n";
+            std::cout << "[더미 " << bot.id << "] 접속 종료\n";
         });
 
     if (!bot.service.StartClient(1))
     {
-        std::cout << "[Dummy " << bot.id << "] StartClient failed\n";
+        std::cout << "[더미 " << bot.id << "] 클라이언트 시작 실패\n";
         return;
     }
 
     if (!bot.service.Connect(ip, port))
     {
-        std::cout << "[Dummy " << bot.id << "] Connect failed\n";
+        std::cout << "[더미 " << bot.id << "] 연결 실패\n";
         bot.service.Stop();
         return;
     }
@@ -78,7 +75,7 @@ int main()
     WSADATA wsa{};
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {
-        std::cout << "WSAStartup failed\n";
+        std::cout << "WSAStartup 초기화 실패\n";
         return 1;
     }
 

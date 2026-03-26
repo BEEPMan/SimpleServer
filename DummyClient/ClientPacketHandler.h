@@ -9,9 +9,9 @@ public:
     bool HandlePacket(Session& session, const Packet& pkt) override;
 
 private:
-    bool HandleChat(Session& session, const Packet& pkt);
-    bool HandlePing(Session& session, const Packet& pkt);
-    bool HandlePong(Session& session, const Packet& pkt);
+    bool HandleChat(Session&, const Packet& pkt);
+    bool HandlePing(Session& session, const Packet&);
+    bool HandlePong(Session&, const Packet&);
 
 private:
     int _clientId = 0;

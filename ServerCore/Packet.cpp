@@ -51,16 +51,24 @@ PacketReadResult TryGetPacket(std::vector<char>& stream, Packet& out)
     if (header.size < sizeof(PacketHeader))
         return PacketReadResult::InvalidHeader;
 
-    if (stream.size() < header.size)
+    if (header.size > MAX_PACKET_SIZE)
         return PacketReadResult::PacketTooLarge;
+
+    if (!IsValidOpcode(header.opcode))
+        return PacketReadResult::InvalidHeader;
+
+    if (stream.size() < header.size)
+        return PacketReadResult::Incomplete;
 
     Packet pkt{};
     pkt.header = header;
-    pkt.payloadLen = static_cast<uint16_t>(header.size - sizeof(PacketHeader));
-    pkt.payload = (pkt.payloadLen > 0) ? (stream.data() + sizeof(PacketHeader)) : nullptr;
+
+    const uint16_t payloadLen = static_cast<uint16_t>(header.size - sizeof(PacketHeader));
+    if (payloadLen > 0)
+        pkt.payload.assign(stream.begin() + sizeof(PacketHeader), stream.begin() + header.size);
 
     stream.erase(stream.begin(), stream.begin() + header.size);
 
-    out = pkt;
+    out = std::move(pkt);
     return PacketReadResult::Success;
 }

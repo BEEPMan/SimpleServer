@@ -1,5 +1,4 @@
 #include <WinSock2.h>
-#include <WS2tcpip.h>
 #include <iostream>
 
 #include "NetService.h"
@@ -13,7 +12,7 @@ int main()
     WSADATA wsa{};
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {
-        std::cout << "WSAStartup failed\n";
+        std::cout << "WSAStartup 초기화 실패\n";
         return 1;
     }
 
@@ -23,17 +22,17 @@ int main()
 
     service.SetOnConnected([](Session&)
         {
-            std::cout << "[Server] Client connected\n";
+            std::cout << "[서버] 클라이언트 접속\n";
         });
 
     service.SetOnDisconnected([](Session&)
         {
-            std::cout << "[Server] Client disconnected\n";
+            std::cout << "[서버] 클라이언트 접속 종료\n";
         });
 
     if (!service.StartServer("0.0.0.0", 7777, 4))
     {
-        std::cout << "Failed to start server\n";
+        std::cout << "서버 시작 실패\n";
         WSACleanup();
         return 1;
     }

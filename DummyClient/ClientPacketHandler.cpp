@@ -4,7 +4,7 @@
 #include "Opcodes.h"
 
 #include <iostream>
-#include <string>
+#include <string_view>
 
 ClientPacketHandler::ClientPacketHandler(int clientId)
     : _clientId(clientId)
@@ -24,23 +24,21 @@ bool ClientPacketHandler::HandlePacket(Session& session, const Packet& pkt)
 
 bool ClientPacketHandler::HandleChat(Session&, const Packet& pkt)
 {
-    std::string msg;
-    if (pkt.payloadLen > 0 && pkt.payload)
-        msg.assign(pkt.payload, pkt.payload + pkt.payloadLen);
+    const std::string_view msg(pkt.payload.data(), pkt.payload.size());
 
-    std::cout << "[Dummy " << _clientId << "] CHAT: " << msg << "\n";
+    std::cout << "[더미 " << _clientId << "] 채팅: " << msg << "\n";
     return true;
 }
 
 bool ClientPacketHandler::HandlePing(Session& session, const Packet&)
 {
-    std::cout << "[Dummy " << _clientId << "] PING received\n";
+    std::cout << "[더미 " << _clientId << "] PING 수신\n";
     session.EnqueueSend(MakePacket(OP_PONG));
     return true;
 }
 
 bool ClientPacketHandler::HandlePong(Session&, const Packet&)
 {
-    std::cout << "[Dummy " << _clientId << "] PONG received\n";
+    std::cout << "[더미 " << _clientId << "] PONG 수신\n";
     return true;
 }

@@ -7,6 +7,7 @@
 #include <WS2tcpip.h>
 #include <iostream>
 #include <cstring>
+#include <memory>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -70,7 +71,7 @@ bool NetService::StartServer(const char* ip, uint16_t port, int workerCount)
     if (!InitIocpAndWorkers(workerCount))
         return false;
 
-    std::cout << "[Server] Started on " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
+    std::cout << "[서버] 시작됨 — " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
     return true;
 }
 
@@ -84,7 +85,7 @@ bool NetService::StartClient(int workerCount)
     if (!InitIocpAndWorkers(workerCount))
         return false;
 
-    std::cout << "[ClientRuntime] Started\n";
+    std::cout << "[클라이언트] 시작됨\n";
     return true;
 }
 
@@ -108,7 +109,12 @@ bool NetService::Connect(const char* ip, uint16_t port)
         return false;
     }
 
-    auto* session = new Session(sock, _iocp, _packetHandler, *this);
+    return CreateAndRegisterSession(sock);
+}
+
+bool NetService::CreateAndRegisterSession(SOCKET sock)
+{
+    auto* session = new Session(sock, _packetHandler, *this);
 
     HANDLE h = CreateIoCompletionPort(reinterpret_cast<HANDLE>(sock), _iocp, reinterpret_cast<ULONG_PTR>(session), 0);
     if (!h)
@@ -133,21 +139,11 @@ void NetService::RunAcceptLoop()
         if (client == INVALID_SOCKET)
         {
             if (_running.load())
-                std::cout << "[Server] accept failed: " << WSAGetLastError() << "\n";
+                std::cout << "[서버] accept 실패: " << WSAGetLastError() << "\n";
             continue;
         }
 
-        auto* session = new Session(client, _iocp, _packetHandler, *this);
-
-        HANDLE h = CreateIoCompletionPort(reinterpret_cast<HANDLE>(client), _iocp, reinterpret_cast<ULONG_PTR>(session), 0);
-        if (!h)
-        {
-            session->Close();
-            continue;
-        }
-
-        AddSession(session);
-        session->Start();
+        CreateAndRegisterSession(client);
     }
 }
 
@@ -212,7 +208,7 @@ void NetService::Broadcast(const SendBufferRef& sendBuffer)
 
 void NetService::Broadcast(std::vector<char>&& packet)
 {
-    auto sendBuffer = MakeSendBuffer(packet);
+    auto sendBuffer = MakeSendBuffer(std::move(packet));
     Broadcast(sendBuffer);
 }
 
@@ -262,12 +258,11 @@ void NetService::WorkerLoop()
             break;
 
         auto* session = reinterpret_cast<Session*>(key);
-        auto* ctx = reinterpret_cast<IoContext*>(pov);
+        auto ctx = std::unique_ptr<IoContext>(reinterpret_cast<IoContext*>(pov));
 
         if (!ok || bytes == 0)
         {
             if (session) session->Close();
-            delete ctx;
             if (session) session->Release();
             continue;
         }
@@ -277,7 +272,6 @@ void NetService::WorkerLoop()
         else
             session->OnSendComplete();
 
-        delete ctx;
         session->Release();
     }
 }
