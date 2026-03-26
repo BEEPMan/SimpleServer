@@ -25,7 +25,7 @@ bool ServerPacketHandler::HandleChat(Session&, const Packet& pkt)
 
     const std::string_view msg(pkt.payload.data(), pkt.payload.size());
 
-    std::cout << "[서버] 채팅 수신: " << msg << "\n";
+    std::cout << "[Server] chat received: " << msg << "\n";
 
     auto out = MakePacket(OP_CHAT, pkt.payload.data(), static_cast<uint16_t>(pkt.payload.size()));
     _service->Broadcast(std::move(out));

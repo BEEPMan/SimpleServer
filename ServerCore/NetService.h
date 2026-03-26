@@ -36,6 +36,9 @@ public:
     void Broadcast(const SendBufferRef& sendBuffer);
     void Broadcast(std::vector<char>&& packet);
 
+    using SessionFactory = std::function<Session*(SOCKET, IPacketHandler&, NetService&)>;
+    void SetSessionFactory(SessionFactory factory) { _sessionFactory = std::move(factory); }
+
     void SetOnConnected(std::function<void(Session&)> fn) { _onConnected = std::move(fn); }
     void SetOnDisconnected(std::function<void(Session&)> fn) { _onDisconnected = std::move(fn); }
 
@@ -63,6 +66,7 @@ private:
     std::mutex _sessionLock;
     std::unordered_set<Session*> _sessions;
 
+    SessionFactory                _sessionFactory;
     std::function<void(Session&)> _onConnected;
     std::function<void(Session&)> _onDisconnected;
 };

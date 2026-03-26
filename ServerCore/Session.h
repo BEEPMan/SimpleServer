@@ -15,7 +15,7 @@ class Session
 {
 public:
     Session(SOCKET s, IPacketHandler& packetHandler, NetService& owner);
-    ~Session();
+    virtual ~Session();
 
     SOCKET GetSocket() const { return _sock; }
     bool IsClosing() const { return _closing.load(std::memory_order_acquire); }

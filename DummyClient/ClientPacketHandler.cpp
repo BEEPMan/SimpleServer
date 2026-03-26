@@ -26,19 +26,19 @@ bool ClientPacketHandler::HandleChat(Session&, const Packet& pkt)
 {
     const std::string_view msg(pkt.payload.data(), pkt.payload.size());
 
-    std::cout << "[더미 " << _clientId << "] 채팅: " << msg << "\n";
+    std::cout << "[Dummy " << _clientId << "] chat: " << msg << "\n";
     return true;
 }
 
 bool ClientPacketHandler::HandlePing(Session& session, const Packet&)
 {
-    std::cout << "[더미 " << _clientId << "] PING 수신\n";
+    std::cout << "[Dummy " << _clientId << "] PING received\n";
     session.EnqueueSend(MakePacket(OP_PONG));
     return true;
 }
 
 bool ClientPacketHandler::HandlePong(Session&, const Packet&)
 {
-    std::cout << "[더미 " << _clientId << "] PONG 수신\n";
+    std::cout << "[Dummy " << _clientId << "] PONG received\n";
     return true;
 }

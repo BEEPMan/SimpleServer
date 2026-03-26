@@ -18,7 +18,7 @@ Session::~Session()
 
 void Session::Start()
 {
-    std::cout << "[Session] 세션 연결됨\n";
+    std::cout << "[Session] connected\n";
     _owner.NotifyConnected(*this);
     PostRecv();
 }
@@ -45,14 +45,14 @@ void Session::Close()
     _recvStream.clear();
     _recvStream.shrink_to_fit();
 
-    std::cout << "[Session] 세션 종료됨\n";
+    std::cout << "[Session] disconnected\n";
     _owner.NotifyDisconnected(*this);
     Release();
 }
 
 void Session::CloseWithLog(const char* reason)
 {
-    std::cout << "[Session] " << reason << " — 연결 종료\n";
+    std::cout << "[Session] " << reason << " — closing\n";
     Close();
 }
 

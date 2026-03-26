@@ -1,18 +1,22 @@
 #include <WinSock2.h>
 #include <iostream>
+#include <atomic>
 
 #include "NetService.h"
 #include "ServerPacketHandler.h"
-#include "Session.h"
+#include "ClientSession.h"
+#include "Player.h"
 
 #pragma comment(lib, "ws2_32.lib")
+
+static std::atomic<uint64_t> s_nextPlayerId{ 1 };
 
 int main()
 {
     WSADATA wsa{};
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {
-        std::cout << "WSAStartup 초기화 실패\n";
+        std::cout << "WSAStartup failed\n";
         return 1;
     }
 
@@ -20,19 +24,29 @@ int main()
     NetService service(handler);
     handler.SetService(&service);
 
-    service.SetOnConnected([](Session&)
+    service.SetSessionFactory([](SOCKET sock, IPacketHandler& h, NetService& svc) -> Session*
         {
-            std::cout << "[서버] 클라이언트 접속\n";
+            return new ClientSession(sock, h, svc);
         });
 
-    service.SetOnDisconnected([](Session&)
+    service.SetOnConnected([](Session& session)
         {
-            std::cout << "[서버] 클라이언트 접속 종료\n";
+            auto& cs = static_cast<ClientSession&>(session);
+            uint64_t id = s_nextPlayerId.fetch_add(1, std::memory_order_relaxed);
+            cs.SetPlayer(std::make_shared<Player>(id, "플레이어_" + std::to_string(id)));
+            std::cout << "[Server] Client connected. Player id=" << id << "\n";
+        });
+
+    service.SetOnDisconnected([](Session& session)
+        {
+            auto& cs = static_cast<ClientSession&>(session);
+            auto player = cs.GetPlayer();
+            std::cout << "[Server] Client disconnected. Player id=" << (player ? player->GetPlayerId() : 0) << "\n";
         });
 
     if (!service.StartServer("0.0.0.0", 7777, 4))
     {
-        std::cout << "서버 시작 실패\n";
+        std::cout << "Server start failed\n";
         WSACleanup();
         return 1;
     }

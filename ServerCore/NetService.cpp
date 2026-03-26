@@ -71,7 +71,7 @@ bool NetService::StartServer(const char* ip, uint16_t port, int workerCount)
     if (!InitIocpAndWorkers(workerCount))
         return false;
 
-    std::cout << "[서버] 시작됨 — " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
+    std::cout << "[Server] started — " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
     return true;
 }
 
@@ -85,7 +85,7 @@ bool NetService::StartClient(int workerCount)
     if (!InitIocpAndWorkers(workerCount))
         return false;
 
-    std::cout << "[클라이언트] 시작됨\n";
+    std::cout << "[Client] started\n";
     return true;
 }
 
@@ -114,12 +114,15 @@ bool NetService::Connect(const char* ip, uint16_t port)
 
 bool NetService::CreateAndRegisterSession(SOCKET sock)
 {
-    auto* session = new Session(sock, _packetHandler, *this);
+    Session* session = _sessionFactory
+        ? _sessionFactory(sock, _packetHandler, *this)
+        : new Session(sock, _packetHandler, *this);
 
     HANDLE h = CreateIoCompletionPort(reinterpret_cast<HANDLE>(sock), _iocp, reinterpret_cast<ULONG_PTR>(session), 0);
     if (!h)
     {
-        session->Close();
+        // Start()가 호출되기 전이므로 Close()의 콜백 체인을 거치지 않고 직접 해제
+        delete session;
         return false;
     }
 
@@ -139,7 +142,7 @@ void NetService::RunAcceptLoop()
         if (client == INVALID_SOCKET)
         {
             if (_running.load())
-                std::cout << "[서버] accept 실패: " << WSAGetLastError() << "\n";
+                std::cout << "[Server] accept failed: " << WSAGetLastError() << "\n";
             continue;
         }
 
