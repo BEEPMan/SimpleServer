@@ -9,6 +9,12 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+#ifdef _DEBUG
+#pragma comment(lib, "Debug\\libprotobufd.lib")
+#else
+#pragma comment(lib, "Release\\libprotobuf.lib")
+#endif
+
 static std::atomic<uint64_t> s_nextPlayerId{ 1 };
 
 int main()

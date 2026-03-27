@@ -14,6 +14,12 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+#ifdef _DEBUG
+#pragma comment(lib, "Debug\\libprotobufd.lib")
+#else
+#pragma comment(lib, "Release\\libprotobuf.lib")
+#endif
+
 struct DummyBot
 {
     int id = 0;
