@@ -1,4 +1,4 @@
-#include "NetService.h"
+﻿#include "NetService.h"
 #include "Session.h"
 #include "IPacketHandler.h"
 #include "IoContext.h"
@@ -71,7 +71,7 @@ bool NetService::StartServer(const char* ip, uint16_t port, int workerCount)
     if (!InitIocpAndWorkers(workerCount))
         return false;
 
-    std::cout << "[Server] started — " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
+    std::cout << "[Server] started - " << (ip ? ip : "0.0.0.0") << ":" << port << "\n";
     return true;
 }
 
@@ -227,6 +227,18 @@ void NetService::NotifyDisconnected(Session& session)
 
     if (_onDisconnected)
         _onDisconnected(session);
+}
+
+void NetService::ForEachSession(std::function<void(Session&)> fn)
+{
+    std::vector<Session*> snapshot;
+    {
+        std::lock_guard<std::mutex> lock(_sessionLock);
+        snapshot.assign(_sessions.begin(), _sessions.end());
+    }
+    for (Session* s : snapshot)
+        if (s && !s->IsClosing())
+            fn(*s);
 }
 
 void NetService::AddSession(Session* session)

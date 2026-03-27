@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <WinSock2.h>
 #include <windows.h>
 #include <vector>
@@ -38,6 +38,8 @@ public:
 
     using SessionFactory = std::function<Session*(SOCKET, IPacketHandler&, NetService&)>;
     void SetSessionFactory(SessionFactory factory) { _sessionFactory = std::move(factory); }
+
+    void ForEachSession(std::function<void(Session&)> fn);
 
     void SetOnConnected(std::function<void(Session&)> fn) { _onConnected = std::move(fn); }
     void SetOnDisconnected(std::function<void(Session&)> fn) { _onDisconnected = std::move(fn); }

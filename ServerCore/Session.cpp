@@ -52,7 +52,7 @@ void Session::Close()
 
 void Session::CloseWithLog(const char* reason)
 {
-    std::cout << "[Session] " << reason << " — closing\n";
+    std::cout << "[Session] " << reason << " - closing\n";
     Close();
 }
 

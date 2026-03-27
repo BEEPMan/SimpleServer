@@ -9,16 +9,11 @@
 #include "NetService.h"
 #include "ClientPacketHandler.h"
 #include "Packet.h"
+#include "ProtoUtil.h"
 #include "Opcodes.h"
 #include "Session.h"
 
 #pragma comment(lib, "ws2_32.lib")
-
-#ifdef _DEBUG
-#pragma comment(lib, "Debug\\libprotobufd.lib")
-#else
-#pragma comment(lib, "Release\\libprotobuf.lib")
-#endif
 
 struct DummyBot
 {
@@ -39,7 +34,10 @@ void RunDummyBot(int id, const char* ip, uint16_t port)
     bot.service.SetOnConnected([&bot](Session& session)
         {
             std::cout << "[Dummy " << bot.id << "] connected\n";
-            session.EnqueueSend(MakePacket(OP_PING));
+
+            Protocol::C_EnterGame req;
+            req.set_name("더미봇_" + std::to_string(bot.id));
+            session.EnqueueSend(MakePacketFromProto(OP_C_ENTER_GAME, req));
         });
 
     bot.service.SetOnDisconnected([&bot](Session&)
@@ -63,14 +61,10 @@ void RunDummyBot(int id, const char* ip, uint16_t port)
     int tick = 0;
     while (true)
     {
-        std::string msg = "Hello from dummy #" + std::to_string(bot.id) +
-            " tick=" + std::to_string(tick++);
-
-        bot.service.Broadcast(MakePacket(
-            OP_CHAT,
-            msg.data(),
-            static_cast<uint16_t>(msg.size())
-        ));
+        Protocol::C_Chat chatReq;
+        chatReq.set_message("안녕하세요 더미봇_" + std::to_string(bot.id) +
+            " (" + std::to_string(tick++) + ")");
+        bot.service.Broadcast(MakePacketFromProto(OP_C_CHAT, chatReq));
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -78,6 +72,9 @@ void RunDummyBot(int id, const char* ip, uint16_t port)
 
 int main()
 {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     WSADATA wsa{};
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {

@@ -1,0 +1,71 @@
+syntax = "proto3";
+package Protocol;
+
+// 공통 타입
+message Vector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message PlayerInfo {
+    uint64 player_id = 1;
+    string name      = 2;
+    Vector3 position  = 3;
+    Vector3 direction = 4;
+}
+
+// C_ENTER_GAME: 클라이언트 → 서버, 닉네임으로 입장 요청
+message C_EnterGame {
+    string name = 1;
+}
+
+// S_ENTER_GAME: 서버 → 클라이언트, 입장 결과 (내 플레이어 정보 포함)
+message S_EnterGame {
+    bool       success = 1;
+    PlayerInfo my_info = 2;
+}
+
+// S_SPAWN: 서버 → 클라이언트, 새 플레이어 등장 알림
+message S_Spawn {
+    repeated PlayerInfo players = 1;
+}
+
+// S_DESPAWN: 서버 → 클라이언트, 플레이어 퇴장 알림
+message S_Despawn {
+    repeated uint64 player_ids = 1;
+}
+
+// C_MOVE: 클라이언트 → 서버, 이동 요청
+message C_Move {
+    Vector3 position  = 1;
+    Vector3 direction = 2;
+}
+
+// S_MOVE: 서버 → 클라이언트, 이동 결과 전파
+message S_Move {
+    uint64  player_id = 1;
+    Vector3 position  = 2;
+    Vector3 direction = 3;
+}
+
+// C_CHAT: 클라이언트 → 서버, 채팅 전송
+message C_Chat {
+    string message = 1;
+}
+
+// S_CHAT: 서버 → 클라이언트, 채팅 수신
+message S_Chat {
+    uint64 player_id = 1;
+    string name      = 2;
+    string message   = 3;
+}
+
+// S_PLAYER_LIST: 서버 → 클라이언트, 현재 접속 중인 플레이어 목록
+message S_PlayerList {
+    repeated PlayerInfo players = 1;
+}
+
+// C_PING / S_PONG: 테스트용
+message C_Ping {}
+message S_Pong {}

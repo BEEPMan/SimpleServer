@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <cstdint>
 #include <vector>
 #include "SendBuffer.h"
 
-constexpr uint16_t MAX_PACKET_SIZE       = 1024;
+constexpr uint16_t MAX_PACKET_SIZE       = 65531; // uint16_t max(65535) - header(4)
 constexpr size_t   MAX_RECV_STREAM_SIZE  = 8192;
 
 #pragma pack(push, 1)

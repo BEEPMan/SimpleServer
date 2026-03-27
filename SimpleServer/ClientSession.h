@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Session.h"
 #include "Player.h"
 #include <memory>

@@ -1,4 +1,4 @@
-#include "Packet.h"
+﻿#include "Packet.h"
 #include "Opcodes.h"
 #include <cstring>
 
@@ -31,9 +31,17 @@ bool IsValidOpcode(uint16_t opcode)
 {
     switch (opcode)
     {
-    case OP_CHAT:
-    case OP_PING:
-    case OP_PONG:
+    case OP_C_ENTER_GAME:
+    case OP_S_ENTER_GAME:
+    case OP_S_SPAWN:
+    case OP_S_DESPAWN:
+    case OP_C_MOVE:
+    case OP_S_MOVE:
+    case OP_C_CHAT:
+    case OP_S_CHAT:
+    case OP_S_PLAYER_LIST:
+    case OP_C_PING:
+    case OP_S_PONG:
         return true;
     default:
         return false;

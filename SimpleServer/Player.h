@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <cstdint>
 #include <string>
 
@@ -19,8 +19,9 @@ public:
     const Vec3&        GetPosition()  const { return _position; }
     const Vec3&        GetDirection() const { return _direction; }
 
-    void SetPosition(const Vec3& pos)  { _position = pos; }
-    void SetDirection(const Vec3& dir) { _direction = dir; }
+    void SetName(const std::string& name) { _name = name; }
+    void SetPosition(const Vec3& pos)     { _position = pos; }
+    void SetDirection(const Vec3& dir)    { _direction = dir; }
 
 private:
     uint64_t    _playerId;
