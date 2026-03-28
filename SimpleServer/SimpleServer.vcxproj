@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -72,8 +72,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(IncludePath)</IncludePath>
-    <LibraryPath>
-    </LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(IncludePath)</IncludePath>
@@ -119,7 +117,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\bio86\Desktop\Dev\SimpleServer\x64\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\bio86\Desktop\Dev\SimpleServer\x64\Debug;C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\lib\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>ServerCore.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -138,17 +136,19 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\bio86\Desktop\Dev\SimpleServer\x64\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\bio86\Desktop\Dev\SimpleServer\x64\Debug;C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\lib\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>ServerCore.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameRoom.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="ServerPacketHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />
+    <ClInclude Include="GameRoom.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ServerPacketHandler.h" />
   </ItemGroup>

@@ -1,12 +1,12 @@
-﻿#pragma once
+#pragma once
 #include "IPacketHandler.h"
 
-class NetService;
+class GameRoom;
 
 class ServerPacketHandler : public IPacketHandler
 {
 public:
-    void SetService(NetService* service) { _service = service; }
+    void SetRoom(GameRoom* room) { _room = room; }
     bool HandlePacket(Session& session, const Packet& pkt) override;
 
 private:
@@ -16,5 +16,5 @@ private:
     bool HandlePing(Session& session, const Packet& pkt);
 
 private:
-    NetService* _service = nullptr;
+    GameRoom* _room = nullptr;
 };

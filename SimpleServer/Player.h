@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <string>
 
+class Session;
+
 struct Vec3
 {
     float x = 0.f;
@@ -19,13 +21,17 @@ public:
     const Vec3&        GetPosition()  const { return _position; }
     const Vec3&        GetDirection() const { return _direction; }
 
+    Session*           GetSession()   const { return _session; }
+
     void SetName(const std::string& name) { _name = name; }
     void SetPosition(const Vec3& pos)     { _position = pos; }
     void SetDirection(const Vec3& dir)    { _direction = dir; }
+    void SetSession(Session* s)           { _session = s; }
 
 private:
     uint64_t    _playerId;
     std::string _name;
     Vec3        _position;
     Vec3        _direction;
+    Session*    _session = nullptr;
 };
