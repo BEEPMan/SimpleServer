@@ -12,6 +12,7 @@ public:
 private:
     bool HandleEnterGame(Session& session, const Packet& pkt);
     bool HandleMove(Session& session, const Packet& pkt);
+    bool HandleInputCmd(Session& session, const Packet& pkt);
     bool HandleChat(Session& session, const Packet& pkt);
     bool HandlePing(Session& session, const Packet& pkt);
 

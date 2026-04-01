@@ -8,6 +8,12 @@
 *.sln.docstates
 .claude/
 .omc/
+AGENTS.md
+CLAUDE.local.md
+
+# vcpkg
+vcpkg.json
+vcpkg_installed/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

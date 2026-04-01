@@ -1,4 +1,4 @@
-﻿#include "Packet.h"
+#include "Packet.h"
 #include "Opcodes.h"
 #include <cstring>
 
@@ -42,6 +42,8 @@ bool IsValidOpcode(uint16_t opcode)
     case OP_S_PLAYER_LIST:
     case OP_C_PING:
     case OP_S_PONG:
+    case OP_C_INPUT_CMD:
+    case OP_S_PLAYER_STATE:
         return true;
     default:
         return false;
@@ -63,7 +65,7 @@ PacketReadResult TryGetPacket(std::vector<char>& stream, Packet& out)
         return PacketReadResult::PacketTooLarge;
 
     if (!IsValidOpcode(header.opcode))
-        return PacketReadResult::InvalidHeader;
+        return PacketReadResult::InvalidOpcode;
 
     if (stream.size() < header.size)
         return PacketReadResult::Incomplete;

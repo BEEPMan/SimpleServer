@@ -9,10 +9,11 @@ message Vector3 {
 }
 
 message PlayerInfo {
-    uint64 player_id = 1;
-    string name      = 2;
+    uint64  player_id = 1;
+    string  name      = 2;
     Vector3 position  = 3;
-    Vector3 direction = 4;
+    float   yaw       = 4;
+    float   pitch     = 5;
 }
 
 // C_ENTER_GAME: 클라이언트 → 서버, 닉네임으로 입장 요청
@@ -38,15 +39,17 @@ message S_Despawn {
 
 // C_MOVE: 클라이언트 → 서버, 이동 요청
 message C_Move {
-    Vector3 position  = 1;
-    Vector3 direction = 2;
+    Vector3 position = 1;
+    float   yaw      = 2;
+    float   pitch    = 3;
 }
 
 // S_MOVE: 서버 → 클라이언트, 이동 결과 전파
 message S_Move {
     uint64  player_id = 1;
     Vector3 position  = 2;
-    Vector3 direction = 3;
+    float   yaw       = 3;
+    float   pitch     = 4;
 }
 
 // C_CHAT: 클라이언트 → 서버, 채팅 전송
@@ -69,3 +72,23 @@ message S_PlayerList {
 // C_PING / S_PONG: 테스트용
 message C_Ping {}
 message S_Pong {}
+
+// C_INPUT_CMD: 클라이언트 → 서버, 틱 입력 커맨드 (Client Prediction용)
+message C_InputCmd {
+    uint32 tick        = 1;  // 클라이언트 틱 번호
+    int32  move_x      = 2;  // 좌우 이동 (-127 ~ 127 양자화)
+    int32  move_z      = 3;  // 전후 이동 (-127 ~ 127 양자화)
+    int32  yaw_delta   = 4;  // yaw 변화량 (0.01° 단위)
+    int32  pitch_delta = 5;  // pitch 변화량 (0.01° 단위, 서버는 무시)
+    bool   jump        = 6;  // 점프 입력
+}
+
+// S_PLAYER_STATE: 서버 → 클라이언트, 플레이어 물리 상태 (Server Reconciliation용)
+message S_PlayerState {
+    uint64 player_id   = 1;
+    uint32 tick        = 2;  // 처리된 마지막 틱 번호
+    Vector3 position   = 3;
+    float  yaw         = 4;
+    float  vert_vel    = 5;  // 수직 속도 (m/s)
+    bool   is_grounded = 6;
+}

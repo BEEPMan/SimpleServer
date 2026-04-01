@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <cstdint>
 #include <vector>
 #include "SendBuffer.h"
@@ -27,6 +27,7 @@ enum class PacketReadResult : uint8_t
     Success,
     Incomplete,
     InvalidHeader,
+	InvalidOpcode,
     PacketTooLarge
 };
 

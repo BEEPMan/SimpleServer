@@ -200,6 +200,12 @@ void Session::OnRecvComplete(const char* data, int len)
             return;
         }
 
+        if (result == PacketReadResult::InvalidOpcode)
+        {
+            CloseWithLog("잘못된 Opcode");
+            return;
+        }
+
         if (result == PacketReadResult::PacketTooLarge)
         {
             CloseWithLog("패킷 크기 초과");

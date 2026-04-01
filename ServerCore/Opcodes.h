@@ -14,4 +14,6 @@ enum : uint16_t
     OP_S_PLAYER_LIST = 9,
     OP_C_PING        = 10,
     OP_S_PONG        = 11,
+    OP_C_INPUT_CMD   = 12,
+    OP_S_PLAYER_STATE = 13,
 };

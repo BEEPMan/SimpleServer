@@ -41,7 +41,13 @@ int main()
             auto player = std::make_shared<Player>(id, "");
             player->SetSession(&session);
             cs.SetPlayer(player);
-            room.Enter(player);
+
+            // Enter는 게임 루프 스레드에서 처리
+            room.PostTask([&room, player]()
+            {
+                room.Enter(player);
+            });
+
             std::cout << "[Server] Client connected. Player id=" << id << "\n";
         });
 
@@ -51,10 +57,17 @@ int main()
             auto player = cs.GetPlayer();
             if (player)
             {
-                room.Leave(player->GetPlayerId());
+                uint64_t id = player->GetPlayerId();
                 player->SetSession(nullptr);
+
+                // Leave는 게임 루프 스레드에서 처리
+                room.PostTask([&room, id]()
+                {
+                    room.Leave(id);
+                });
+
+                std::cout << "[Server] Client disconnected. Player id=" << id << "\n";
             }
-            std::cout << "[Server] Client disconnected. Player id=" << (player ? player->GetPlayerId() : 0) << "\n";
         });
 
     if (!service.StartServer("0.0.0.0", 7777, 4))
@@ -64,7 +77,9 @@ int main()
         return 1;
     }
 
+    room.StartGameLoop();
     service.RunAcceptLoop();
+    room.StopGameLoop();
 
     service.Stop();
     WSACleanup();
