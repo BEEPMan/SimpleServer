@@ -126,10 +126,10 @@
       <AdditionalDependencies>ServerCore.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "C:\vcpkg\installed\x64-windows\debug\bin\abseil_dll.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\debug\bin\libprotobufd.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\debug\bin\libprotobuf-lited.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\debug\bin\libprotocd.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\debug\bin\abseil_dll.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\debug\bin\libprotobufd.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\debug\bin\libprotobuf-lited.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\debug\bin\libprotocd.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,14 +151,15 @@ xcopy /Y /D "C:\vcpkg\installed\x64-windows\debug\bin\libprotocd.dll" "$(OutDir)
       <AdditionalDependencies>ServerCore.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "C:\vcpkg\installed\x64-windows\bin\abseil_dll.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\bin\libprotobuf.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\bin\libprotobuf-lite.dll" "$(OutDir)"
-xcopy /Y /D "C:\vcpkg\installed\x64-windows\bin\libprotoc.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\bin\abseil_dll.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\bin\libprotobuf.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\bin\libprotobuf-lite.dll" "$(OutDir)"
+xcopy /Y /D "$(SolutionDir)vcpkg_installed\x64-windows\bin\libprotoc.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GameRoom.cpp" />
+    <ClCompile Include="Map.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="ServerPacketHandler.cpp" />
@@ -166,6 +167,7 @@ xcopy /Y /D "C:\vcpkg\installed\x64-windows\bin\libprotoc.dll" "$(OutDir)"</Comm
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />
     <ClInclude Include="GameRoom.h" />
+    <ClInclude Include="Map.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ServerPacketHandler.h" />
   </ItemGroup>

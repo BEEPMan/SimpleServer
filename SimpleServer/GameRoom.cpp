@@ -12,7 +12,14 @@
 #include <algorithm>
 #include <chrono>
 
-// ─── 작업 큐 (크로스 스레드) ──────────────────────────────────────────────────
+// ── 맵 로드 ───────────────────────────────────────────────────────────────────
+
+bool GameRoom::LoadMap(const std::string& jsonPath)
+{
+    return _map.Load(jsonPath);
+}
+
+// ── 작업 큐 (크로스 스레드) ───────────────────────────────────────────────────
 
 void GameRoom::PostTask(std::function<void()> task)
 {
@@ -34,7 +41,7 @@ void GameRoom::DrainTasks()
     }
 }
 
-// ─── 게임 루프 스레드 전용 함수들 ────────────────────────────────────────────
+// ── 플레이어 입장/퇴장 ────────────────────────────────────────────────────────
 
 void GameRoom::Enter(std::shared_ptr<Player> player)
 {
@@ -46,7 +53,6 @@ void GameRoom::Leave(uint64_t playerId)
     auto it = _players.find(playerId);
     if (it == _players.end()) return;
 
-    // S_Despawn 브로드캐스트
     Protocol::S_Despawn despawn;
     despawn.add_player_ids(playerId);
     Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_DESPAWN, despawn)));
@@ -54,69 +60,45 @@ void GameRoom::Leave(uint64_t playerId)
     _players.erase(it);
 }
 
+static void FillPlayerInfo(Protocol::PlayerInfo* info, const Player& player)
+{
+    const PhysicsState& ps = player.GetPhysicsState();
+    info->set_player_id(player.GetPlayerId());
+    info->set_name(player.GetName());
+    info->mutable_position()->set_x(ps.pos.x);
+    info->mutable_position()->set_y(ps.pos.y);
+    info->set_dir(static_cast<Protocol::MoveDir>(ps.dir));
+    info->set_is_moving(ps.isMoving);
+    info->set_is_jumping(ps.isJumping);
+}
+
 void GameRoom::EnterGame(std::shared_ptr<Player> player, const std::string& name)
 {
-    if (name.empty() || name.size() > 20)
-        return;
-    if (player->IsEntered())
-        return;
+    if (name.empty() || name.size() > 20) return;
+    if (player->IsEntered()) return;
 
-    player->SetName(name);  // _entered = true
+    player->SetName(name);
 
-    // 기존 플레이어 목록 수집
     std::vector<Player*> others;
     for (auto& [id, p] : _players)
-    {
         if (p.get() != player.get())
             others.push_back(p.get());
-    }
 
-    // S_EnterGame — 입장 결과를 나에게 전송
     {
         Protocol::S_EnterGame res;
         res.set_success(true);
-        auto* info = res.mutable_my_info();
-        info->set_player_id(player->GetPlayerId());
-        info->set_name(player->GetName());
-        const PhysicsState& ps = player->GetPhysicsState();
-        info->mutable_position()->set_x(ps.pos.x);
-        info->mutable_position()->set_y(ps.pos.y);
-        info->mutable_position()->set_z(ps.pos.z);
-        info->set_yaw(ps.yaw);
-        info->set_pitch(ps.pitch);
+        FillPlayerInfo(res.mutable_my_info(), *player);
         Send(player.get(), MakeSendBuffer(MakePacketFromProto(OP_S_ENTER_GAME, res)));
     }
-
-    // S_PlayerList — 현재 접속 중인 플레이어 목록을 나에게 전송
     {
         Protocol::S_PlayerList playerList;
         for (const auto& p : others)
-        {
-            auto* info = playerList.add_players();
-            info->set_player_id(p->GetPlayerId());
-            info->set_name(p->GetName());
-            const PhysicsState& ps = p->GetPhysicsState();
-            info->mutable_position()->set_x(ps.pos.x);
-            info->mutable_position()->set_y(ps.pos.y);
-            info->mutable_position()->set_z(ps.pos.z);
-            info->set_yaw(ps.yaw);
-            info->set_pitch(ps.pitch);
-        }
+            FillPlayerInfo(playerList.add_players(), *p);
         Send(player.get(), MakeSendBuffer(MakePacketFromProto(OP_S_PLAYER_LIST, playerList)));
     }
-
-    // S_Spawn — 나의 등장을 기존 플레이어들에게 전파
     {
         Protocol::S_Spawn spawn;
-        auto* info = spawn.add_players();
-        info->set_player_id(player->GetPlayerId());
-        info->set_name(player->GetName());
-        const PhysicsState& myPs = player->GetPhysicsState();
-        info->mutable_position()->set_x(myPs.pos.x);
-        info->mutable_position()->set_y(myPs.pos.y);
-        info->mutable_position()->set_z(myPs.pos.z);
-        info->set_yaw(myPs.yaw);
-        info->set_pitch(myPs.pitch);
+        FillPlayerInfo(spawn.add_players(), *player);
         auto buf = MakeSendBuffer(MakePacketFromProto(OP_S_SPAWN, spawn));
         for (auto* p : others)
             Send(p, buf);
@@ -125,30 +107,13 @@ void GameRoom::EnterGame(std::shared_ptr<Player> player, const std::string& name
     std::cout << "[Server] Player entered: " << name << "\n";
 }
 
-void GameRoom::Move(std::shared_ptr<Player> player, const Vec3& pos, float yaw, float pitch)
-{
-    player->SetPosition(pos);
-    player->GetPhysicsState().yaw   = yaw;
-    player->GetPhysicsState().pitch = pitch;
-
-    Protocol::S_Move res;
-    res.set_player_id(player->GetPlayerId());
-    res.mutable_position()->set_x(pos.x);
-    res.mutable_position()->set_y(pos.y);
-    res.mutable_position()->set_z(pos.z);
-    res.set_yaw(yaw);
-    res.set_pitch(pitch);
-
-    Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_MOVE, res)));
-}
-
-void GameRoom::Chat(std::shared_ptr<Player> player, const std::string& message)
+void GameRoom::Chat(std::shared_ptr<Player> player, const std::string& message, int32_t type)
 {
     Protocol::S_Chat res;
     res.set_player_id(player->GetPlayerId());
     res.set_name(player->GetName());
+    res.set_type(static_cast<Protocol::ChatType>(type));
     res.set_message(message);
-
     Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_CHAT, res)));
 }
 
@@ -160,7 +125,6 @@ void GameRoom::Send(Player* player, const SendBufferRef& buf)
 
 void GameRoom::Broadcast(const SendBufferRef& buf, Player* except)
 {
-    // 게임 루프 스레드 전용 — 락 없이 _players 순회
     for (auto& [id, player] : _players)
     {
         if (player.get() == except) continue;
@@ -169,7 +133,7 @@ void GameRoom::Broadcast(const SendBufferRef& buf, Player* except)
     }
 }
 
-// ─── 게임 루프 ────────────────────────────────────────────────────────────────
+// ── 게임 루프 ─────────────────────────────────────────────────────────────────
 
 void GameRoom::StartGameLoop()
 {
@@ -206,16 +170,13 @@ void GameRoom::GameLoopThread()
 
 void GameRoom::TickAll(float /*dt*/)
 {
-    constexpr float CLIENT_DT = 1.f / CLIENT_TICK_RATE;  // 1/60 — 클라이언트 틱 dt와 동일
+    constexpr float CLIENT_DT = 1.f / CLIENT_TICK_RATE;
 
     for (auto& [id, player] : _players)
     {
         if (!player->IsEntered()) continue;
 
-        // 클라이언트가 이번 서버 틱 사이에 쌓아 놓은 입력을 소진.
-        // 각 입력은 클라이언트 예측과 동일한 dt(1/60)로 시뮬레이션.
-        // 상한(MAX_STEPS_PER_TICK)을 두어 패킷 버스트 시 중력 과다 적용 방지.
-        constexpr int MAX_STEPS_PER_TICK = 4;  // 서버 틱 간격 50ms / 클라이언트 dt 16.7ms ≈ 3, 여유 1 추가
+        constexpr int MAX_STEPS_PER_TICK = 8;
         int steps = 0;
         while (player->HasInput() && steps < MAX_STEPS_PER_TICK)
         {
@@ -225,89 +186,327 @@ void GameRoom::TickAll(float /*dt*/)
         }
         if (steps == 0)
         {
-            // 입력 없음 — zero-input으로 중력·낙하 처리 유지
-            SimulatePlayer(*player, InputCmd{}, CLIENT_DT);
+            // 입력 없을 때 실시간 물리 유지 (50Hz 클라이언트 대비 3스텝 = 0.06s ≈ 틱 50ms)
+            for (int i = 0; i < 3; i++)
+                SimulatePlayer(*player, InputCmd{}, CLIENT_DT);
         }
 
-        // S_PlayerState 브로드캐스트
         const PhysicsState& state = player->GetPhysicsState();
-        Protocol::S_PlayerState res;
-        res.set_player_id(player->GetPlayerId());
-        res.set_tick(state.lastTick);
-        res.mutable_position()->set_x(state.pos.x);
-        res.mutable_position()->set_y(state.pos.y);
-        res.mutable_position()->set_z(state.pos.z);
-        res.set_yaw(state.yaw);
-        res.set_vert_vel(state.vertVel);
-        res.set_is_grounded(state.isGrounded);
 
-        Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_PLAYER_STATE, res)));
+        {
+            Protocol::S_PlayerState msg;
+            msg.set_player_id(player->GetPlayerId());
+            msg.set_last_processed_input_seq(state.lastInputSeq);
+            msg.mutable_position()->set_x(state.pos.x);
+            msg.mutable_position()->set_y(state.pos.y);
+            msg.mutable_velocity()->set_x(state.vel.x);
+            msg.mutable_velocity()->set_y(state.isGrounded ? 0.f : state.vel.y);
+            msg.set_is_grounded(state.isGrounded);
+            msg.set_dir(static_cast<Protocol::MoveDir>(state.dir));
+            msg.set_is_moving(state.isMoving);
+            msg.set_is_jumping(state.isJumping);
+            Send(player.get(), MakeSendBuffer(MakePacketFromProto(OP_S_PLAYER_STATE, msg)));
+        }
+        {
+            Protocol::S_BroadcastMove bcast;
+            bcast.set_player_id(player->GetPlayerId());
+            bcast.mutable_position()->set_x(state.pos.x);
+            bcast.mutable_position()->set_y(state.pos.y);
+            bcast.mutable_velocity()->set_x(state.vel.x);
+            bcast.mutable_velocity()->set_y(state.vel.y);
+            bcast.set_dir(static_cast<Protocol::MoveDir>(state.dir));
+            bcast.set_is_grounded(state.isGrounded);
+            bcast.set_is_moving(state.isMoving);
+            bcast.set_is_jumping(state.isJumping);
+            bcast.set_server_tick(_serverTick);
+            Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_BROADCAST_MOVE, bcast)), player.get());
+        }
     }
+
+    _serverTick++;
 }
 
-// ─── 지면 충돌 판정 ───────────────────────────────────────────────────────────
-// 현재: y=0 평면을 지면으로 판정
-// 향후: static_colliders.json 레이캐스트로 교체
-GameRoom::GroundResult GameRoom::CheckGround(const Vec3& pos)
+// ── 충돌 판정 (AABB 타일 기반) ────────────────────────────────────────────────
+//
+// 좌표 규약:
+//   pos.x / pos.y = 플레이어 AABB 중심 좌표
+//   발 바닥 Y = pos.y - PLAYER_HALF_H
+//   머리  Y = pos.y + PLAYER_HALF_H
+//
+// 구조물은 전부 x·y 축에 평행한 변을 가진 다각형(AABB).
+// 타일맵에서 각 셀이 크기 cellSizeX × cellSizeY 의 AABB 하나에 대응.
+//   셀 (cx, cy) 의 월드 경계:
+//     X = [cx * cellSizeX,  (cx+1) * cellSizeX)
+//     Y = [cy * cellSizeY,  (cy+1) * cellSizeY)
+
+// 발 아래 지면 탐색
+GameRoom::GroundResult GameRoom::CheckGround(const Vec2& pos, bool ignoreFloating) const
 {
-    // y=0이 지면. GROUND_THRESHOLD(Unity CC skinWidth)만큼 여유를 두어
-    // cc.isGrounded와 동일한 조건으로 판정
-    constexpr float GROUND_Y = 0.f;
-    if (pos.y <= GROUND_Y + GROUND_THRESHOLD)
-        return { true, GROUND_Y };
-    return { false, GROUND_Y };
+    if (!_map.IsLoaded())
+    {
+        // 맵 미로드 폴백: y=0 을 지면으로 사용
+        const float FALLBACK_Y = 0.f;
+        bool onGround = (pos.y - PLAYER_HALF_H) <= FALLBACK_Y + GROUND_THRESHOLD;
+        return { onGround, FALLBACK_Y };
+    }
+
+    const float csx   = _map.CellSizeX();
+    const float csy   = _map.CellSizeY();
+    const float footY = pos.y - PLAYER_HALF_H;
+
+    // 발 바닥 바로 아래 셀
+    int cy    = Map::WorldToCell(footY - GROUND_THRESHOLD, csy);
+    // 플레이어 너비 범위의 X 셀 (안쪽 여유 0.01 — 타일 경계 오인 방지)
+    int cxMin = Map::WorldToCell(pos.x - PLAYER_HALF_W + 0.01f, csx);
+    int cxMax = Map::WorldToCell(pos.x + PLAYER_HALF_W - 0.01f, csx);
+
+    float bestGroundY = -1e9f;
+    bool  hit         = false;
+
+    for (int cx = cxMin; cx <= cxMax; cx++)
+    {
+        bool solid    = _map.IsSolid(cx, cy);
+        bool floating = !ignoreFloating && _map.IsFloatingGround(cx, cy);
+        if (!solid && !floating) continue;
+
+        float tileTop = _map.CellTopY(cy);
+        if (tileTop > footY + GROUND_THRESHOLD) continue;
+        if (tileTop > bestGroundY)
+        {
+            bestGroundY = tileTop;
+            hit         = true;
+        }
+    }
+
+    return { hit, hit ? bestGroundY : 0.f };
+}
+
+// 머리 위 천장 탐색
+GameRoom::CeilResult GameRoom::CheckCeiling(const Vec2& pos) const
+{
+    if (!_map.IsLoaded()) return { false, 0.f };
+
+    const float csx   = _map.CellSizeX();
+    const float csy   = _map.CellSizeY();
+    const float headY = pos.y + PLAYER_HALF_H;
+
+    // 머리 바로 위 셀
+    int cy    = Map::WorldToCell(headY + GROUND_THRESHOLD, csy);
+    int cxMin = Map::WorldToCell(pos.x - PLAYER_HALF_W + 0.01f, csx);
+    int cxMax = Map::WorldToCell(pos.x + PLAYER_HALF_W - 0.01f, csx);
+
+    float bestCeilY = 1e9f;
+    bool  hit       = false;
+
+    for (int cx = cxMin; cx <= cxMax; cx++)
+    {
+        if (!_map.IsSolid(cx, cy)) continue;
+
+        float tileBottom = _map.CellBottomY(cy);
+        if (tileBottom < bestCeilY)
+        {
+            bestCeilY = tileBottom;
+            hit       = true;
+        }
+    }
+
+    return { hit, hit ? bestCeilY : 0.f };
+}
+
+// 좌·우 벽 탐색 (moveX > 0: 오른쪽, moveX < 0: 왼쪽)
+GameRoom::WallResult GameRoom::CheckWall(const Vec2& pos, float moveX) const
+{
+    if (!_map.IsLoaded() || moveX == 0.f) return { false, 0.f };
+
+    const float csx = _map.CellSizeX();
+    const float csy = _map.CellSizeY();
+
+    // 이동 방향 쪽 플레이어 끝 X (약간 돌출해 경계 셀 포함)
+    float sideX = (moveX > 0.f)
+        ? pos.x + PLAYER_HALF_W + 0.01f
+        : pos.x - PLAYER_HALF_W - 0.01f;
+
+    int cx = Map::WorldToCell(sideX, csx);
+    // 발~머리 범위 (여유 0.05 — 지면·천장 타일을 벽으로 오인하는 현상 방지)
+    int cyMin = Map::WorldToCell(pos.y - PLAYER_HALF_H + 0.05f, csy);
+    int cyMax = Map::WorldToCell(pos.y + PLAYER_HALF_H - 0.05f, csy);
+
+    for (int cy = cyMin; cy <= cyMax; cy++)
+    {
+        if (!_map.IsSolid(cx, cy)) continue;
+
+        float wallX = (moveX > 0.f)
+            ? _map.CellLeftX(cx)  - PLAYER_HALF_W   // 오른쪽 벽: 타일 왼쪽 면 - 반너비
+            : _map.CellRightX(cx) + PLAYER_HALF_W;  // 왼쪽 벽: 타일 오른쪽 면 + 반너비
+        return { true, wallX };
+    }
+
+    return { false, 0.f };
+}
+
+// ── 플레이어 물리 시뮬레이션 ──────────────────────────────────────────────────
+//
+// 충돌 해결 순서: 수평 이동 → 벽 해결 → 수직 이동 → 지면/천장 해결
+// 이 순서를 지켜야 코너 끼임 없이 안정적으로 동작한다.
+
+void GameRoom::HandleLadderState(std::shared_ptr<Player> player, bool onLadder,
+                                  float px, float py, float vx, float vy)
+{
+    PhysicsState& s = player->GetPhysicsState();
+    s.isOnLadder = onLadder;
+    s.pos        = { px, py };
+    s.vel        = { vx, vy };
+    if (onLadder)
+    {
+        s.isGrounded = false;
+        s.isJumping  = false;
+    }
+    std::cout << "[Ladder] id=" << player->GetPlayerId()
+              << (onLadder ? " enter" : " exit")
+              << " pos=(" << px << "," << py << ")"
+              << " vel=(" << vx << "," << vy << ")\n";
 }
 
 void GameRoom::SimulatePlayer(Player& player, const InputCmd& cmd, float dt)
 {
-    PhysicsState& state = player.GetPhysicsState();
+    PhysicsState& s = player.GetPhysicsState();
 
-    // 1) 이전 틱 위치 기준 지면 판정
-    GroundResult ground = CheckGround(state.pos);
-    state.isGrounded = ground.isGrounded;
+    // 사다리 위에서는 클라이언트가 위치를 직접 관리 — 물리 건너뜀
+    if (s.isOnLadder) return;
 
-    // 2) 지면에 붙어있을 때 하방 속도 스냅 (Unity: if (grounded && velY < 0) velY = -2f)
-    if (state.isGrounded && state.vertVel < 0.f)
-        state.vertVel = -2.f;
+    // 1. dt 결정 (클라이언트 deltaTime 유효 시 사용, 범위 초과 시 서버 기본값)
+    const float useDt = (cmd.deltaTime > 0.f && cmd.deltaTime < 0.1f) ? cmd.deltaTime : dt;
 
-    // 3) 점프 (지면에 있을 때만)
-    if (state.isGrounded && cmd.jump)
-        state.vertVel = JUMP_VEL;
+    // drop-through 타이머 갱신
+    if (cmd.dropThrough)
+        s.dropThroughTimer = 0.25f;
+    else if (s.dropThroughTimer > 0.f)
+        s.dropThroughTimer = std::max(0.f, s.dropThroughTimer - useDt);
 
-    // 4) 중력 (점프 프레임 포함 매 틱 적용 — Unity와 동일 순서)
-    state.vertVel -= GRAVITY * dt;
+    const bool ignoreFloating = s.dropThroughTimer > 0.f;
 
-    // 5) yaw / pitch 업데이트
-    state.yaw  += cmd.yawDelta;
-    state.pitch = std::clamp(state.pitch + cmd.pitchDelta, -80.f, 80.f);
+    // 2. 수평 방향 결정
+    float moveX = 0.f;
+    if (cmd.moveLeft)  moveX = -1.f;
+    if (cmd.moveRight) moveX =  1.f;
 
-    // 6) 수평 이동: 로컬 입력을 yaw 기준 월드 좌표로 변환
-    //    Unity 좌표계: yaw 0° = +Z, 시계방향 증가
-    //    클라이언트의 Vector3.ClampMagnitude와 동일하게 대각선 이동 정규화
-    float moveLen = std::sqrt(cmd.moveX * cmd.moveX + cmd.moveZ * cmd.moveZ);
-    float normX   = (moveLen > 1.f) ? cmd.moveX / moveLen : cmd.moveX;
-    float normZ   = (moveLen > 1.f) ? cmd.moveZ / moveLen : cmd.moveZ;
-    float rad  = state.yaw * (3.14159265f / 180.f);
-    float sinY = std::sin(rad);
-    float cosY = std::cos(rad);
-    state.pos.x += (sinY * normZ + cosY * normX) * MOVE_SPEED * dt;
-    state.pos.z += (cosY * normZ - sinY * normX) * MOVE_SPEED * dt;
+    s.isMoving = (moveX != 0.f);
+    if      (moveX < 0.f)             s.dir = MoveDir::Left;
+    else if (moveX > 0.f)             s.dir = MoveDir::Right;
+    if (cmd.faceDir != MoveDir::None) s.dir = cmd.faceDir;
 
-    // 7) 수직 이동
-    state.pos.y += state.vertVel * dt;
+    // 3. 이동 전 접지 판정 — floating ground는 하강/정지 시에만 지면으로 인정
+    bool ignoreFloatingPremove = ignoreFloating || (s.vel.y > 0.f);
+    GroundResult ground = CheckGround(s.pos, ignoreFloatingPremove);
+    s.isGrounded = ground.hit;
 
-    // 8) 지면 충돌 해결 — 이동 후 위치로 재판정하여 클램프 + velY 처리
-    GroundResult postGround = CheckGround(state.pos);
-    if (postGround.isGrounded)
+    // 4. 접지 시 하방 속도 고정 (지면 밀착 유지)
+    if (s.isGrounded && s.vel.y <= 0.f)
+        s.vel.y = -2.f;
+
+    // 5. 점프 (접지 상태에서만 허용)
+    // [DEBUG_JUMP] 점프 커맨드 수신 로그 — 제거 시 아래 블록 전체 삭제
+    if (cmd.jump)
+        std::cout << "[DEBUG_JUMP] jump cmd received: isGrounded=" << s.isGrounded
+                  << " vel.y=" << s.vel.y
+                  << " pos=(" << s.pos.x << "," << s.pos.y << ")"
+                  << " seq=" << cmd.inputSeq << "\n";
+    // [DEBUG_JUMP] 거부 시 발 위치 상세
+    if (cmd.jump && !s.isGrounded)
     {
-        state.pos.y      = postGround.groundY;
-        state.isGrounded = true;
-        // Unity CharacterController는 지면 접지 시 velY = -2 를 유지함
-        state.vertVel    = -2.f;
+        GroundResult gr = CheckGround(s.pos);
+        float footY = s.pos.y - PLAYER_HALF_H;
+        std::cout << "[DEBUG_JUMP] jump REJECTED: footY=" << footY
+                  << " groundY=" << gr.groundY
+                  << " gap=" << (footY - gr.groundY)
+                  << " seq=" << cmd.inputSeq << "\n";
+    }
+    // [DEBUG_JUMP] end
+    if (cmd.jump && s.isGrounded)
+    {
+        // [DEBUG_JUMP] 점프 적용 로그 — 제거 시 아래 한 줄 삭제
+        std::cout << "[DEBUG_JUMP] jump applied: vel.y " << s.vel.y << " -> " << JUMP_FORCE << "\n";
+        // [DEBUG_JUMP] end
+        s.vel.y     = JUMP_FORCE;
+        s.isJumping = true;
+        s.isGrounded = false;
     }
 
-    // zero-input(tick=0) 시 lastTick을 덮어쓰지 않음.
-    // 입력 부재 틱에서 tick=0이 전송되면 클라이언트 reconcile 매칭이 깨짐.
-    if (cmd.tick != 0)
-        state.lastTick = cmd.tick;
+    // 6. 중력 (공중일 때만 적용)
+    if (!s.isGrounded)
+    {
+        s.vel.y -= GRAVITY * useDt;
+        if (s.vel.y < MAX_FALL_SPEED) s.vel.y = MAX_FALL_SPEED;
+    }
+
+    // ── 수평 이동 + 벽 충돌 해결 ─────────────────────────────────────────────
+    s.pos.x += moveX * MOVE_SPEED * useDt;
+
+    if (moveX != 0.f)
+    {
+        WallResult wall = CheckWall(s.pos, moveX);
+        if (wall.hit)
+        {
+            // [DEBUG_WALL] 공중 벽 충돌 로그
+            if (!s.isGrounded)
+                std::cout << "[DEBUG_WALL] air wall hit: moveX=" << moveX
+                          << " pos=(" << s.pos.x << "->" << wall.wallX << "," << s.pos.y << ")"
+                          << " vel.y=" << s.vel.y << " seq=" << cmd.inputSeq << "\n";
+            // [DEBUG_WALL] end
+            s.pos.x = wall.wallX;
+            s.vel.x = 0.f;
+        }
+    }
+
+    // ── 수직 이동 + 지면/천장 충돌 해결 ─────────────────────────────────────
+    const bool wasGrounded = s.isGrounded;  // [DEBUG_LAND] 착지 전환 감지용
+
+    if (s.vel.y > 0.f)
+    {
+        // 상승 중: 한 번에 이동 후 천장 충돌 체크
+        s.pos.y += s.vel.y * useDt;
+        CeilResult ceil = CheckCeiling(s.pos);
+        if (ceil.hit)
+        {
+            s.pos.y = ceil.ceilY - PLAYER_HALF_H;
+            s.vel.y = 0.f;
+        }
+    }
+    else
+    {
+        // 하강 또는 정지: GROUND_THRESHOLD 단위로 서브스텝 → 고속 낙하 관통 방지
+        // useDt 최대 0.1s 시 최대 이동량 = 15×0.1 = 1.5 > GROUND_THRESHOLD(0.1) → 관통 가능
+        const float subStepSize = GROUND_THRESHOLD * 0.9f;
+        const float totalMove   = std::abs(s.vel.y * useDt);
+        const int   numSteps    = (totalMove > 0.f)
+                                  ? std::max(1, (int)std::ceil(totalMove / subStepSize))
+                                  : 1;
+        const float subDt = useDt / numSteps;
+
+        for (int i = 0; i < numSteps; i++)
+        {
+            s.pos.y += s.vel.y * subDt;
+            GroundResult gr = CheckGround(s.pos, ignoreFloating);
+            if (gr.hit)
+            {
+                s.pos.y      = gr.groundY + PLAYER_HALF_H;
+                s.vel.y      = -2.f;
+                s.isGrounded = true;
+                s.isJumping  = false;
+                // [DEBUG_LAND] 착지 순간만 출력 (grounded 유지 중엔 생략)
+                if (!wasGrounded)
+                    std::cout << "[DEBUG_LAND] 착지: seq=" << cmd.inputSeq
+                              << " groundY=" << gr.groundY
+                              << " snapY=" << s.pos.y
+                              << " ignoreFloating=" << ignoreFloating
+                              << " dropTimer=" << s.dropThroughTimer << "\n";
+                // [DEBUG_LAND] end
+                break;
+            }
+        }
+    }
+
+    // 7. lastInputSeq 갱신 (Reconciliation 기준점)
+    if (cmd.inputSeq != 0)
+        s.lastInputSeq = cmd.inputSeq;
 }

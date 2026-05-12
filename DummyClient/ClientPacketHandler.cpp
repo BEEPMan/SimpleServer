@@ -18,7 +18,6 @@ bool ClientPacketHandler::HandlePacket(Session& session, const Packet& pkt)
     case OP_S_ENTER_GAME:  return HandleEnterGame(session, pkt);
     case OP_S_SPAWN:       return HandleSpawn(session, pkt);
     case OP_S_DESPAWN:     return HandleDespawn(session, pkt);
-    case OP_S_MOVE:        return HandleMove(session, pkt);
     case OP_S_CHAT:        return HandleChat(session, pkt);
     case OP_S_PLAYER_LIST: return HandlePlayerList(session, pkt);
     case OP_S_PONG:        return HandlePong(session, pkt);
@@ -61,16 +60,6 @@ bool ClientPacketHandler::HandleDespawn(Session&, const Packet& pkt)
     for (uint64_t id : res.player_ids())
         std::cout << "[Dummy " << _clientId << "] despawn: id=" << id << "\n";
 
-    return true;
-}
-
-bool ClientPacketHandler::HandleMove(Session&, const Packet& pkt)
-{
-    Protocol::S_Move res;
-    if (!res.ParseFromArray(pkt.payload.data(), static_cast<int>(pkt.payload.size())))
-        return false;
-
-    // 이동 패킷은 빈번하므로 로그 생략
     return true;
 }
 

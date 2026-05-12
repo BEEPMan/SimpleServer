@@ -1,94 +1,268 @@
 syntax = "proto3";
 package Protocol;
 
-// 공통 타입
-message Vector3 {
+// ══════════════════════════════════════════════════════════════
+//  공통 타입
+// ══════════════════════════════════════════════════════════════
+
+message Vector2 {
     float x = 1;
     float y = 2;
-    float z = 3;
+}
+
+enum MoveDir {
+    NONE  = 0;
+    LEFT  = 1;
+    RIGHT = 2;
+}
+
+enum AttackType {
+    MELEE  = 0;
+    RANGED = 1;
+    SKILL  = 2;
+}
+
+enum ChatType {
+    ALL     = 0;
+    WHISPER = 1;
+    PARTY   = 2;
+    GUILD   = 3;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  플레이어 / 오브젝트 정보
+// ══════════════════════════════════════════════════════════════
+
+message StatInfo {
+    int32 hp      = 1;
+    int32 max_hp  = 2;
+    int32 mp      = 3;
+    int32 max_mp  = 4;
+    int32 attack  = 5;
+    int32 defence = 6;
+    int32 speed   = 7;
+    int32 level   = 8;
+    int64 exp     = 9;
+    int64 max_exp = 10;
 }
 
 message PlayerInfo {
-    uint64  player_id = 1;
-    string  name      = 2;
-    Vector3 position  = 3;
-    float   yaw       = 4;
-    float   pitch     = 5;
+    uint64   player_id  = 1;
+    string   name       = 2;
+    Vector2  position   = 3;
+    MoveDir  dir        = 4;
+    StatInfo stat       = 5;
+    bool     is_moving  = 6;
+    bool     is_jumping = 7;
 }
 
-// C_ENTER_GAME: 클라이언트 → 서버, 닉네임으로 입장 요청
+// ══════════════════════════════════════════════════════════════
+//  세션 / 입장
+// ══════════════════════════════════════════════════════════════
+
+// C_EnterGame: 클라이언트 → 서버, 닉네임으로 입장 요청
 message C_EnterGame {
     string name = 1;
 }
 
-// S_ENTER_GAME: 서버 → 클라이언트, 입장 결과 (내 플레이어 정보 포함)
+// S_EnterGame: 서버 → 클라이언트, 입장 결과 (내 플레이어 정보 포함)
 message S_EnterGame {
     bool       success = 1;
-    PlayerInfo my_info = 2;
+    string     error   = 2;
+    PlayerInfo my_info = 3;
 }
 
-// S_SPAWN: 서버 → 클라이언트, 새 플레이어 등장 알림
+// S_Spawn: 서버 → 클라이언트, 오브젝트 등장 알림
 message S_Spawn {
     repeated PlayerInfo players = 1;
 }
 
-// S_DESPAWN: 서버 → 클라이언트, 플레이어 퇴장 알림
+// S_Despawn: 서버 → 클라이언트, 오브젝트 퇴장 알림
 message S_Despawn {
     repeated uint64 player_ids = 1;
 }
 
-// C_MOVE: 클라이언트 → 서버, 이동 요청
-message C_Move {
-    Vector3 position = 1;
-    float   yaw      = 2;
-    float   pitch    = 3;
-}
-
-// S_MOVE: 서버 → 클라이언트, 이동 결과 전파
-message S_Move {
-    uint64  player_id = 1;
-    Vector3 position  = 2;
-    float   yaw       = 3;
-    float   pitch     = 4;
-}
-
-// C_CHAT: 클라이언트 → 서버, 채팅 전송
-message C_Chat {
-    string message = 1;
-}
-
-// S_CHAT: 서버 → 클라이언트, 채팅 수신
-message S_Chat {
-    uint64 player_id = 1;
-    string name      = 2;
-    string message   = 3;
-}
-
-// S_PLAYER_LIST: 서버 → 클라이언트, 현재 접속 중인 플레이어 목록
+// S_PlayerList: 서버 → 클라이언트, 현재 접속 중인 플레이어 목록
 message S_PlayerList {
     repeated PlayerInfo players = 1;
 }
 
-// C_PING / S_PONG: 테스트용
-message C_Ping {}
-message S_Pong {}
+// ══════════════════════════════════════════════════════════════
+//  이동 — Client Prediction + Server Reconciliation
+//
+//  흐름:
+//    1. 클라이언트는 매 프레임 C_InputCmd를 input_seq와 함께 전송하고,
+//       로컬에서 즉시 물리를 시뮬레이션한다 (Client Prediction).
+//    2. 서버는 입력을 순서대로 처리한 뒤 S_PlayerState를 본인에게만 전송.
+//       last_processed_input_seq = 서버가 마지막으로 처리한 seq.
+//    3. 클라이언트는 서버 상태를 수신하면 (last_processed_input_seq + 1)
+//       이후의 미확인 입력을 재시뮬레이션하여 예측 오차를 보정한다
+//       (Server Reconciliation).
+//    4. 타 플레이어는 S_BroadcastMove 스냅샷을 받아 보간(interpolation)한다.
+// ══════════════════════════════════════════════════════════════
 
-// C_INPUT_CMD: 클라이언트 → 서버, 틱 입력 커맨드 (Client Prediction용)
-message C_InputCmd {
-    uint32 tick        = 1;  // 클라이언트 틱 번호
-    int32  move_x      = 2;  // 좌우 이동 (-127 ~ 127 양자화)
-    int32  move_z      = 3;  // 전후 이동 (-127 ~ 127 양자화)
-    int32  yaw_delta   = 4;  // yaw 변화량 (0.01° 단위)
-    int32  pitch_delta = 5;  // pitch 변화량 (0.01° 단위, 서버는 무시)
-    bool   jump        = 6;  // 점프 입력
+// C_LadderState: 클라이언트 → 서버, 사다리 진입/이탈 알림
+// 진입 시: on_ladder=true, pos=사다리 위 위치, vel=(0,0)
+// 이탈 시: on_ladder=false, pos=이탈 위치, vel=이탈 속도
+message C_LadderState {
+    bool  on_ladder = 1;
+    float pos_x     = 2;
+    float pos_y     = 3;
+    float vel_x     = 4;
+    float vel_y     = 5;
 }
 
-// S_PLAYER_STATE: 서버 → 클라이언트, 플레이어 물리 상태 (Server Reconciliation용)
+// C_InputCmd: 클라이언트 → 서버
+message C_InputCmd {
+    uint32  input_seq  = 1;  // 단조 증가 입력 시퀀스 번호
+    float   delta_time = 2;  // 이번 프레임 dt (서버 물리 재현용)
+    bool    move_left  = 3;
+    bool    move_right = 4;
+    bool    jump       = 5;
+    bool    attack     = 6;
+    MoveDir face_dir   = 7;  // 캐릭터가 바라보는 방향
+}
+
+// S_PlayerState: 서버 → 클라이언트 (본인 전용 권위적 상태)
+// 클라이언트는 last_processed_input_seq 이후 미확인 입력을 replay하여 보정
 message S_PlayerState {
-    uint64 player_id   = 1;
-    uint32 tick        = 2;  // 처리된 마지막 틱 번호
-    Vector3 position   = 3;
-    float  yaw         = 4;
-    float  vert_vel    = 5;  // 수직 속도 (m/s)
-    bool   is_grounded = 6;
+    uint64  player_id                = 1;
+    uint32  last_processed_input_seq = 2;  // Reconciliation 기준점
+    Vector2 position                 = 3;
+    Vector2 velocity                 = 4;
+    bool    is_grounded              = 5;
+    MoveDir dir                      = 6;
+    bool    is_moving                = 7;
+    bool    is_jumping               = 8;
+}
+
+// S_BroadcastMove: 서버 → 클라이언트 (타 플레이어 이동 브로드캐스트)
+// 수신 측은 server_tick을 기준으로 보간(interpolation)한다
+message S_BroadcastMove {
+    uint64  player_id   = 1;
+    Vector2 position    = 2;
+    Vector2 velocity    = 3;
+    MoveDir dir         = 4;
+    bool    is_grounded = 5;
+    bool    is_moving   = 6;
+    bool    is_jumping  = 7;
+    uint32  server_tick = 8;  // 서버 틱 (보간 타임스탬프용)
+}
+
+// ══════════════════════════════════════════════════════════════
+//  전투
+// ══════════════════════════════════════════════════════════════
+
+// C_Attack: 클라이언트 → 서버
+message C_Attack {
+    uint32     input_seq   = 1;  // CP용 시퀀스 (공격도 예측 대상)
+    AttackType attack_type = 2;
+    uint32     skill_id    = 3;  // SKILL 타입일 때만 사용
+    Vector2    aim_dir     = 4;  // 공격 방향 벡터 (정규화)
+}
+
+// S_AttackResult: 서버 → 클라이언트, 공격 판정 결과 브로드캐스트
+message S_AttackResult {
+    uint64              attacker_id     = 1;
+    AttackType          attack_type     = 2;
+    uint32              skill_id        = 3;
+    Vector2             origin          = 4;  // 공격 발생 위치
+    Vector2             aim_dir         = 5;
+    repeated uint64     hit_target_ids  = 6;
+}
+
+// S_TakeDamage: 서버 → 클라이언트, 피격 결과
+message S_TakeDamage {
+    uint64 target_id   = 1;
+    uint64 attacker_id = 2;
+    int32  damage      = 3;
+    int32  remain_hp   = 4;
+    bool   is_critical = 5;
+}
+
+// S_Die: 서버 → 클라이언트, 사망 알림
+message S_Die {
+    uint64 player_id = 1;
+    uint64 killer_id = 2;
+}
+
+// C_Resurrect: 클라이언트 → 서버, 부활 요청
+message C_Resurrect {}
+
+// S_Resurrect: 서버 → 클라이언트, 부활 처리 결과
+message S_Resurrect {
+    uint64  player_id = 1;
+    Vector2 position  = 2;
+    int32   hp        = 3;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  채팅
+// ══════════════════════════════════════════════════════════════
+
+// C_Chat: 클라이언트 → 서버
+message C_Chat {
+    ChatType type    = 1;
+    string   message = 2;
+    string   target  = 3;  // WHISPER 대상 닉네임
+}
+
+// S_Chat: 서버 → 클라이언트
+message S_Chat {
+    uint64   player_id = 1;
+    string   name      = 2;
+    ChatType type      = 3;
+    string   message   = 4;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  인벤토리 / 아이템
+// ══════════════════════════════════════════════════════════════
+
+message ItemInfo {
+    uint64 item_id     = 1;
+    uint32 template_id = 2;
+    int32  count       = 3;
+    int32  slot        = 4;
+}
+
+// C_UseItem: 클라이언트 → 서버, 아이템 사용
+message C_UseItem {
+    uint64 item_id = 1;
+}
+
+// S_InventoryUpdate: 서버 → 클라이언트, 인벤토리 변경 통지
+message S_InventoryUpdate {
+    repeated ItemInfo items = 1;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  존 / 맵 이동
+// ══════════════════════════════════════════════════════════════
+
+// C_EnterZone: 클라이언트 → 서버, 존 입장 요청
+message C_EnterZone {
+    uint32 zone_id = 1;
+}
+
+// S_EnterZone: 서버 → 클라이언트, 존 입장 결과
+message S_EnterZone {
+    bool    success   = 1;
+    uint32  zone_id   = 2;
+    Vector2 spawn_pos = 3;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  네트워크 유틸리티
+// ══════════════════════════════════════════════════════════════
+
+// C_Ping / S_Pong: 레이턴시 측정
+// client_time은 echo-back되므로 RTT = (수신시각 - client_time)
+message C_Ping {
+    uint64 client_time = 1;  // 클라이언트 타임스탬프 (ms)
+}
+
+message S_Pong {
+    uint64 client_time = 1;  // echo back
+    uint64 server_time = 2;  // 서버 타임스탬프 (ms)
 }

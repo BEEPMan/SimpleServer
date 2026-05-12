@@ -35,14 +35,13 @@ bool IsValidOpcode(uint16_t opcode)
     case OP_S_ENTER_GAME:
     case OP_S_SPAWN:
     case OP_S_DESPAWN:
-    case OP_C_MOVE:
-    case OP_S_MOVE:
     case OP_C_CHAT:
     case OP_S_CHAT:
     case OP_S_PLAYER_LIST:
     case OP_C_PING:
     case OP_S_PONG:
     case OP_C_INPUT_CMD:
+    case OP_C_LADDER_STATE:
     case OP_S_PLAYER_STATE:
         return true;
     default:
