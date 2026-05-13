@@ -121,6 +121,8 @@ message C_InputCmd {
     bool    jump       = 5;
     bool    attack     = 6;
     MoveDir face_dir   = 7;  // 캐릭터가 바라보는 방향
+    bool    move_up    = 8;  // 사다리 상승
+    bool    move_down  = 9;  // 사다리 하강
 }
 
 // S_PlayerState: 서버 → 클라이언트 (본인 전용 권위적 상태)
@@ -134,6 +136,7 @@ message S_PlayerState {
     MoveDir dir                      = 6;
     bool    is_moving                = 7;
     bool    is_jumping               = 8;
+    bool    is_on_ladder             = 9;  // 사다리 상태 (CSP reconcile용)
 }
 
 // S_BroadcastMove: 서버 → 클라이언트 (타 플레이어 이동 브로드캐스트)

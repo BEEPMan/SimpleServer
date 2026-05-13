@@ -205,6 +205,7 @@ void GameRoom::TickAll(float /*dt*/)
             msg.set_dir(static_cast<Protocol::MoveDir>(state.dir));
             msg.set_is_moving(state.isMoving);
             msg.set_is_jumping(state.isJumping);
+            msg.set_is_on_ladder(state.isOnLadder);
             Send(player.get(), MakeSendBuffer(MakePacketFromProto(OP_S_PLAYER_STATE, msg)));
         }
         {
@@ -213,7 +214,7 @@ void GameRoom::TickAll(float /*dt*/)
             bcast.mutable_position()->set_x(state.pos.x);
             bcast.mutable_position()->set_y(state.pos.y);
             bcast.mutable_velocity()->set_x(state.vel.x);
-            bcast.mutable_velocity()->set_y(state.vel.y);
+            bcast.mutable_velocity()->set_y(state.isGrounded ? 0.f : state.vel.y);
             bcast.set_dir(static_cast<Protocol::MoveDir>(state.dir));
             bcast.set_is_grounded(state.isGrounded);
             bcast.set_is_moving(state.isMoving);
@@ -349,30 +350,128 @@ GameRoom::WallResult GameRoom::CheckWall(const Vec2& pos, float moveX) const
 // 충돌 해결 순서: 수평 이동 → 벽 해결 → 수직 이동 → 지면/천장 해결
 // 이 순서를 지켜야 코너 끼임 없이 안정적으로 동작한다.
 
+void GameRoom::GetLadderExtent(int cx, int startCy,
+                                float& centerX, float& minY, float& maxY) const
+{
+    const float csx = _map.CellSizeX();
+    const float csy = _map.CellSizeY();
+    centerX = (cx + 0.5f) * csx;
+
+    int yMin = startCy;
+    while (_map.IsLadder(cx, yMin - 1)) yMin--;
+
+    int yMax = startCy;
+    while (_map.IsLadder(cx, yMax + 1)) yMax++;
+
+    minY = yMin * csy;         // CellBottomY(yMin)
+    maxY = (yMax + 1) * csy;   // CellTopY(yMax)
+}
+
 void GameRoom::HandleLadderState(std::shared_ptr<Player> player, bool onLadder,
                                   float px, float py, float vx, float vy)
 {
+    if (!onLadder) return;  // 이탈은 SimulatePlayer가 처리
+
     PhysicsState& s = player->GetPhysicsState();
-    s.isOnLadder = onLadder;
+    s.isOnLadder = true;
     s.pos        = { px, py };
-    s.vel        = { vx, vy };
-    if (onLadder)
+    s.vel        = { 0.f, 0.f };
+    s.isGrounded = false;
+    s.isJumping  = false;
+
+    // 맵에서 사다리 범위 계산
+    if (_map.IsLoaded())
     {
-        s.isGrounded = false;
-        s.isJumping  = false;
+        int cx = Map::WorldToCell(px, _map.CellSizeX());
+        int cy = Map::WorldToCell(py, _map.CellSizeY());
+        // 플레이어 발 위치 기준 셀 탐색
+        if (!_map.IsLadder(cx, cy)) cy--;
+        if (_map.IsLadder(cx, cy))
+            GetLadderExtent(cx, cy, s.ladderCenterX, s.ladderMinY, s.ladderMaxY);
+        else
+        {
+            s.ladderCenterX = px;
+            s.ladderMinY    = py - 0.5f;
+            s.ladderMaxY    = py + 10.f;
+        }
     }
+
     std::cout << "[Ladder] id=" << player->GetPlayerId()
-              << (onLadder ? " enter" : " exit")
-              << " pos=(" << px << "," << py << ")"
-              << " vel=(" << vx << "," << vy << ")\n";
+              << " enter pos=(" << px << "," << py << ")"
+              << " center=" << s.ladderCenterX
+              << " minY=" << s.ladderMinY
+              << " maxY=" << s.ladderMaxY << "\n";
 }
 
 void GameRoom::SimulatePlayer(Player& player, const InputCmd& cmd, float dt)
 {
     PhysicsState& s = player.GetPhysicsState();
 
-    // 사다리 위에서는 클라이언트가 위치를 직접 관리 — 물리 건너뜀
-    if (s.isOnLadder) return;
+    // 사다리 물리 시뮬레이션 (서버 권위)
+    if (s.isOnLadder)
+    {
+        const float useDt = (cmd.deltaTime > 0.f && cmd.deltaTime < 0.1f) ? cmd.deltaTime : dt;
+
+        // 점프 → 사다리 이탈 후 공중 물리
+        if (cmd.jump)
+        {
+            s.isOnLadder = false;
+            s.vel.y      = JUMP_FORCE;
+            s.vel.x      = 0.f;
+            s.isJumping  = true;
+            s.isGrounded = false;
+            std::cout << "[Ladder] id=" << player.GetPlayerId() << " jump-exit\n";
+            // 이탈 후 동일 프레임 일반 물리로 fall-through
+        }
+        else
+        {
+            float vy = 0.f;
+            if (cmd.moveUp)   vy =  CLIMB_SPEED;
+            if (cmd.moveDown) vy = -CLIMB_SPEED;
+
+            s.vel.x  = 0.f;
+            s.vel.y  = vy;
+            s.pos.x  = s.ladderCenterX;
+            s.pos.y += vy * useDt;
+
+            // 사다리 범위 클램프 (상단은 PLAYER_HALF_H 여유 포함 — 클라이언트 이탈 임계값과 일치)
+            if (s.pos.y < s.ladderMinY)                    s.pos.y = s.ladderMinY;
+            if (s.pos.y > s.ladderMaxY + PLAYER_HALF_H)   s.pos.y = s.ladderMaxY + PLAYER_HALF_H;
+
+            // 하단 이탈: solid ground 도달 + 능동 하강 중 (vy < 0)
+            // vy == 0(정지) 일 때는 이탈하지 않음 — 지면 위에서 진입 시 즉시 이탈 방지
+            // ignoreFloating=true: 내려오는 발판을 다시 ground로 인식하는 현상 방지
+            //   (클라이언트도 사다리 탑승 시 IgnoreCollision(floating, true)로 동일하게 처리)
+            if (vy < 0.f)
+            {
+                GroundResult gr = CheckGround(s.pos, true);
+                if (gr.hit)
+                {
+                    s.isOnLadder = false;
+                    s.pos.y      = gr.groundY + PLAYER_HALF_H;
+                    s.vel.y      = 0.f;
+                    s.vel.x      = 0.f;
+                    s.isGrounded = true;
+                    std::cout << "[Ladder] id=" << player.GetPlayerId()
+                              << " bottom-exit groundY=" << gr.groundY << "\n";
+                }
+            }
+
+            // 상단 이탈: 사다리 상단(+PLAYER_HALF_H) 초과 + 상승 중
+            // 클라이언트 이탈 임계값(ladderMaxY + extents.y)과 일치시켜 oscillation 방지
+            if (s.isOnLadder && vy > 0.f && s.pos.y >= s.ladderMaxY + PLAYER_HALF_H)
+            {
+                s.isOnLadder = false;
+                s.vel.y      = 0.f;
+                s.vel.x      = 0.f;
+                std::cout << "[Ladder] id=" << player.GetPlayerId() << " top-exit\n";
+                return;  // fall-through 없이 종료 — 다음 틱에서 정상 물리 적용
+            }
+
+            if (s.isOnLadder) return;  // 이탈 안 했으면 물리 종료
+            // 하단 이탈 후 동일 프레임 일반 물리로 fall-through
+        }
+    }
 
     // 1. dt 결정 (클라이언트 deltaTime 유효 시 사용, 범위 초과 시 서버 기본값)
     const float useDt = (cmd.deltaTime > 0.f && cmd.deltaTime < 0.1f) ? cmd.deltaTime : dt;

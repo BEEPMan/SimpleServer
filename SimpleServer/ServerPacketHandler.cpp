@@ -70,6 +70,8 @@ bool ServerPacketHandler::HandleInputCmd(Session& session, const Packet& pkt)
     cmd.jump        = req.jump();
     cmd.dropThrough = req.attack();   // proto attack 필드를 drop-through 신호로 재사용
     cmd.faceDir     = static_cast<MoveDir>(req.face_dir());
+    cmd.moveUp      = req.move_up();
+    cmd.moveDown    = req.move_down();
 
     player->EnqueueInput(cmd);
     return true;

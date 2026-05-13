@@ -52,6 +52,7 @@ private:
     static constexpr float GRAVITY          = 29.43f;  // m/s² ← Physics2D(9.81) × gravityScale(3)
     static constexpr float GROUND_THRESHOLD = 0.1f;    // 접지 판정 여유값 ← 클라이언트 groundCheckRadius(0.1f)와 일치
     static constexpr float MAX_FALL_SPEED  = -15.f;   // 터미널 속도 — |v|×useDt_max(0.1)=1.5 < cellSizeY+HALF_H
+    static constexpr float CLIMB_SPEED     = 3.f;     // m/s ← RPGPlayerController.climbSpeed
 
     // ── 플레이어 AABB (BoxCollider2D size=(1,1), offset=(0,0)) ─
     // pos = transform.position = 콜라이더 중심(Center)
@@ -68,6 +69,7 @@ private:
     GroundResult CheckGround(const Vec2& pos, bool ignoreFloating = false) const;
     CeilResult   CheckCeiling(const Vec2& pos) const;
     WallResult   CheckWall(const Vec2& pos, float moveX) const;
+    void         GetLadderExtent(int cx, int startCy, float& centerX, float& minY, float& maxY) const;
 
     // 게임 루프 스레드 전용 — 락 없이 접근
     std::unordered_map<uint64_t, std::shared_ptr<Player>> _players;

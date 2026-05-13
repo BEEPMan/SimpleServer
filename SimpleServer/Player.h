@@ -26,6 +26,8 @@ struct InputCmd
     bool     jump        = false;
     bool     dropThrough = false;   // proto attack 필드를 drop-through 신호로 재사용
     MoveDir  faceDir     = MoveDir::None;
+    bool     moveUp      = false;   // 사다리 상승
+    bool     moveDown    = false;   // 사다리 하강
 };
 
 // 서버 권위적 물리 상태 (게임 루프 스레드 전용)
@@ -37,7 +39,10 @@ struct PhysicsState
     bool     isMoving   = false;
     bool     isJumping  = false;
     bool     isGrounded       = true;
-    bool     isOnLadder       = false;  // 사다리 상태 (물리 시뮬레이션 건너뜀)
+    bool     isOnLadder       = false;  // 사다리 상태 (서버 시뮬레이션)
+    float    ladderCenterX    = 0.f;    // 사다리 중심 X (월드 좌표)
+    float    ladderMinY       = 0.f;    // 사다리 하단 Y (월드 좌표)
+    float    ladderMaxY       = 0.f;    // 사다리 상단 Y (월드 좌표)
     float    dropThroughTimer = 0.f;    // >0이면 Floating Ground 충돌 무시
     uint32_t lastInputSeq     = 0;      // Reconciliation 기준점
 };

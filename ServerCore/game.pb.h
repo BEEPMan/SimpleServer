@@ -3007,6 +3007,8 @@ class C_InputCmd final : public ::google::protobuf::Message
     kJumpFieldNumber = 5,
     kAttackFieldNumber = 6,
     kFaceDirFieldNumber = 7,
+    kMoveUpFieldNumber = 8,
+    kMoveDownFieldNumber = 9,
   };
   // uint32 input_seq = 1;
   void clear_input_seq() ;
@@ -3078,11 +3080,31 @@ class C_InputCmd final : public ::google::protobuf::Message
   void _internal_set_face_dir(::Protocol::MoveDir value);
 
   public:
+  // bool move_up = 8;
+  void clear_move_up() ;
+  bool move_up() const;
+  void set_move_up(bool value);
+
+  private:
+  bool _internal_move_up() const;
+  void _internal_set_move_up(bool value);
+
+  public:
+  // bool move_down = 9;
+  void clear_move_down() ;
+  bool move_down() const;
+  void set_move_down(bool value);
+
+  private:
+  bool _internal_move_down() const;
+  void _internal_set_move_down(bool value);
+
+  public:
   // @@protoc_insertion_point(class_scope:Protocol.C_InputCmd)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 7,
+  static const ::google::protobuf::internal::TcParseTable<4, 9,
                                    0, 0,
                                    2>
       _table_;
@@ -3111,6 +3133,8 @@ class C_InputCmd final : public ::google::protobuf::Message
     bool jump_;
     bool attack_;
     int face_dir_;
+    bool move_up_;
+    bool move_down_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -4098,6 +4122,7 @@ class S_PlayerState final : public ::google::protobuf::Message
     kIsGroundedFieldNumber = 5,
     kIsMovingFieldNumber = 7,
     kIsJumpingFieldNumber = 8,
+    kIsOnLadderFieldNumber = 9,
   };
   // .Protocol.Vector2 position = 3;
   bool has_position() const;
@@ -4189,11 +4214,21 @@ class S_PlayerState final : public ::google::protobuf::Message
   void _internal_set_is_jumping(bool value);
 
   public:
+  // bool is_on_ladder = 9;
+  void clear_is_on_ladder() ;
+  bool is_on_ladder() const;
+  void set_is_on_ladder(bool value);
+
+  private:
+  bool _internal_is_on_ladder() const;
+  void _internal_set_is_on_ladder(bool value);
+
+  public:
   // @@protoc_insertion_point(class_scope:Protocol.S_PlayerState)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 8,
+  static const ::google::protobuf::internal::TcParseTable<4, 9,
                                    2, 0,
                                    2>
       _table_;
@@ -4223,6 +4258,7 @@ class S_PlayerState final : public ::google::protobuf::Message
     bool is_grounded_;
     bool is_moving_;
     bool is_jumping_;
+    bool is_on_ladder_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -7757,6 +7793,56 @@ inline void C_InputCmd::_internal_set_face_dir(::Protocol::MoveDir value) {
   _impl_.face_dir_ = value;
 }
 
+// bool move_up = 8;
+inline void C_InputCmd::clear_move_up() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.move_up_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000080U);
+}
+inline bool C_InputCmd::move_up() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_InputCmd.move_up)
+  return _internal_move_up();
+}
+inline void C_InputCmd::set_move_up(bool value) {
+  _internal_set_move_up(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  // @@protoc_insertion_point(field_set:Protocol.C_InputCmd.move_up)
+}
+inline bool C_InputCmd::_internal_move_up() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.move_up_;
+}
+inline void C_InputCmd::_internal_set_move_up(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.move_up_ = value;
+}
+
+// bool move_down = 9;
+inline void C_InputCmd::clear_move_down() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.move_down_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000100U);
+}
+inline bool C_InputCmd::move_down() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_InputCmd.move_down)
+  return _internal_move_down();
+}
+inline void C_InputCmd::set_move_down(bool value) {
+  _internal_set_move_down(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
+  // @@protoc_insertion_point(field_set:Protocol.C_InputCmd.move_down)
+}
+inline bool C_InputCmd::_internal_move_down() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.move_down_;
+}
+inline void C_InputCmd::_internal_set_move_down(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.move_down_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // S_PlayerState
@@ -8107,6 +8193,31 @@ inline bool S_PlayerState::_internal_is_jumping() const {
 inline void S_PlayerState::_internal_set_is_jumping(bool value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.is_jumping_ = value;
+}
+
+// bool is_on_ladder = 9;
+inline void S_PlayerState::clear_is_on_ladder() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_on_ladder_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000100U);
+}
+inline bool S_PlayerState::is_on_ladder() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_PlayerState.is_on_ladder)
+  return _internal_is_on_ladder();
+}
+inline void S_PlayerState::set_is_on_ladder(bool value) {
+  _internal_set_is_on_ladder(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
+  // @@protoc_insertion_point(field_set:Protocol.S_PlayerState.is_on_ladder)
+}
+inline bool S_PlayerState::_internal_is_on_ladder() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_on_ladder_;
+}
+inline void S_PlayerState::_internal_set_is_on_ladder(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_on_ladder_ = value;
 }
 
 // -------------------------------------------------------------------
