@@ -32,17 +32,28 @@ bool IsValidOpcode(uint16_t opcode)
     switch (opcode)
     {
     case OP_C_ENTER_GAME:
+    case OP_C_INPUT_CMD:
+    case OP_C_ATTACK:
+    case OP_C_CHAT:
+    case OP_C_USE_ITEM:
+    case OP_C_ENTER_ZONE:
+    case OP_C_RESURRECT:
+    case OP_C_PING:
+    case OP_C_LADDER_STATE:
     case OP_S_ENTER_GAME:
     case OP_S_SPAWN:
     case OP_S_DESPAWN:
-    case OP_C_CHAT:
-    case OP_S_CHAT:
     case OP_S_PLAYER_LIST:
-    case OP_C_PING:
-    case OP_S_PONG:
-    case OP_C_INPUT_CMD:
-    case OP_C_LADDER_STATE:
     case OP_S_PLAYER_STATE:
+    case OP_S_BROADCAST_MOVE:
+    case OP_S_ATTACK_RESULT:
+    case OP_S_TAKE_DAMAGE:
+    case OP_S_DIE:
+    case OP_S_RESURRECT:
+    case OP_S_CHAT:
+    case OP_S_INVENTORY_UPDATE:
+    case OP_S_ENTER_ZONE:
+    case OP_S_PONG:
         return true;
     default:
         return false;

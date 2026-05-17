@@ -142,14 +142,16 @@ message S_PlayerState {
 // S_BroadcastMove: 서버 → 클라이언트 (타 플레이어 이동 브로드캐스트)
 // 수신 측은 server_tick을 기준으로 보간(interpolation)한다
 message S_BroadcastMove {
-    uint64  player_id   = 1;
-    Vector2 position    = 2;
-    Vector2 velocity    = 3;
-    MoveDir dir         = 4;
-    bool    is_grounded = 5;
-    bool    is_moving   = 6;
-    bool    is_jumping  = 7;
-    uint32  server_tick = 8;  // 서버 틱 (보간 타임스탬프용)
+    uint64  player_id    = 1;
+    Vector2 position     = 2;
+    Vector2 velocity     = 3;
+    MoveDir dir          = 4;
+    bool    is_grounded  = 5;
+    bool    is_moving    = 6;
+    bool    is_jumping   = 7;
+    uint32  server_tick  = 8;  // 서버 틱 (보간 타임스탬프용)
+    bool    is_crouching = 9;  // 숙이기 상태
+    bool    is_on_ladder = 10; // 사다리 탑승 상태
 }
 
 // ══════════════════════════════════════════════════════════════

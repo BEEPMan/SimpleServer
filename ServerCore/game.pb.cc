@@ -588,7 +588,9 @@ inline constexpr S_BroadcastMove::Impl_::Impl_(
         is_grounded_{false},
         is_moving_{false},
         is_jumping_{false},
-        server_tick_{0u} {}
+        is_crouching_{false},
+        server_tick_{0u},
+        is_on_ladder_{false} {}
 
 template <typename>
 PROTOBUF_CONSTEXPR S_BroadcastMove::S_BroadcastMove(::_pbi::ConstantInitialized)
@@ -921,7 +923,7 @@ const ::uint32_t
         8,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_._has_bits_),
-        11, // hasbit index offset
+        13, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.player_id_),
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.position_),
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.velocity_),
@@ -930,6 +932,8 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.is_moving_),
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.is_jumping_),
         PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.server_tick_),
+        PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.is_crouching_),
+        PROTOBUF_FIELD_OFFSET(::Protocol::S_BroadcastMove, _impl_.is_on_ladder_),
         2,
         0,
         1,
@@ -937,7 +941,9 @@ const ::uint32_t
         4,
         5,
         6,
+        8,
         7,
+        9,
         0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::Protocol::C_Attack, _impl_._has_bits_),
         7, // hasbit index offset
@@ -1077,21 +1083,21 @@ static const ::_pbi::MigrationSchema
         {89, sizeof(::Protocol::C_InputCmd)},
         {110, sizeof(::Protocol::S_PlayerState)},
         {131, sizeof(::Protocol::S_BroadcastMove)},
-        {150, sizeof(::Protocol::C_Attack)},
-        {161, sizeof(::Protocol::S_AttackResult)},
-        {176, sizeof(::Protocol::S_TakeDamage)},
-        {189, sizeof(::Protocol::S_Die)},
-        {196, sizeof(::Protocol::C_Resurrect)},
-        {197, sizeof(::Protocol::S_Resurrect)},
-        {206, sizeof(::Protocol::C_Chat)},
-        {215, sizeof(::Protocol::S_Chat)},
-        {226, sizeof(::Protocol::ItemInfo)},
-        {237, sizeof(::Protocol::C_UseItem)},
-        {242, sizeof(::Protocol::S_InventoryUpdate)},
-        {247, sizeof(::Protocol::C_EnterZone)},
-        {252, sizeof(::Protocol::S_EnterZone)},
-        {261, sizeof(::Protocol::C_Ping)},
-        {266, sizeof(::Protocol::S_Pong)},
+        {154, sizeof(::Protocol::C_Attack)},
+        {165, sizeof(::Protocol::S_AttackResult)},
+        {180, sizeof(::Protocol::S_TakeDamage)},
+        {193, sizeof(::Protocol::S_Die)},
+        {200, sizeof(::Protocol::C_Resurrect)},
+        {201, sizeof(::Protocol::S_Resurrect)},
+        {210, sizeof(::Protocol::C_Chat)},
+        {219, sizeof(::Protocol::S_Chat)},
+        {230, sizeof(::Protocol::ItemInfo)},
+        {241, sizeof(::Protocol::C_UseItem)},
+        {246, sizeof(::Protocol::S_InventoryUpdate)},
+        {251, sizeof(::Protocol::C_EnterZone)},
+        {256, sizeof(::Protocol::S_EnterZone)},
+        {265, sizeof(::Protocol::C_Ping)},
+        {270, sizeof(::Protocol::S_Pong)},
 };
 static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::Protocol::_Vector2_default_instance_._instance,
@@ -1154,50 +1160,51 @@ const char descriptor_table_protodef_game_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIA
     ".Protocol.Vector2\022\023\n\013is_grounded\030\005 \001(\010\022\036"
     "\n\003dir\030\006 \001(\0162\021.Protocol.MoveDir\022\021\n\tis_mov"
     "ing\030\007 \001(\010\022\022\n\nis_jumping\030\010 \001(\010\022\024\n\014is_on_l"
-    "adder\030\t \001(\010\"\337\001\n\017S_BroadcastMove\022\021\n\tplaye"
+    "adder\030\t \001(\010\"\213\002\n\017S_BroadcastMove\022\021\n\tplaye"
     "r_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Protocol."
     "Vector2\022#\n\010velocity\030\003 \001(\0132\021.Protocol.Vec"
     "tor2\022\036\n\003dir\030\004 \001(\0162\021.Protocol.MoveDir\022\023\n\013"
     "is_grounded\030\005 \001(\010\022\021\n\tis_moving\030\006 \001(\010\022\022\n\n"
-    "is_jumping\030\007 \001(\010\022\023\n\013server_tick\030\010 \001(\r\"~\n"
-    "\010C_Attack\022\021\n\tinput_seq\030\001 \001(\r\022)\n\013attack_t"
-    "ype\030\002 \001(\0162\024.Protocol.AttackType\022\020\n\010skill"
-    "_id\030\003 \001(\r\022\"\n\007aim_dir\030\004 \001(\0132\021.Protocol.Ve"
-    "ctor2\"\301\001\n\016S_AttackResult\022\023\n\013attacker_id\030"
-    "\001 \001(\004\022)\n\013attack_type\030\002 \001(\0162\024.Protocol.At"
-    "tackType\022\020\n\010skill_id\030\003 \001(\r\022!\n\006origin\030\004 \001"
-    "(\0132\021.Protocol.Vector2\022\"\n\007aim_dir\030\005 \001(\0132\021"
-    ".Protocol.Vector2\022\026\n\016hit_target_ids\030\006 \003("
-    "\004\"n\n\014S_TakeDamage\022\021\n\ttarget_id\030\001 \001(\004\022\023\n\013"
-    "attacker_id\030\002 \001(\004\022\016\n\006damage\030\003 \001(\005\022\021\n\trem"
-    "ain_hp\030\004 \001(\005\022\023\n\013is_critical\030\005 \001(\010\"-\n\005S_D"
-    "ie\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tkiller_id\030\002 \001(\004"
-    "\"\r\n\013C_Resurrect\"Q\n\013S_Resurrect\022\021\n\tplayer"
-    "_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Protocol.V"
-    "ector2\022\n\n\002hp\030\003 \001(\005\"K\n\006C_Chat\022 \n\004type\030\001 \001"
-    "(\0162\022.Protocol.ChatType\022\017\n\007message\030\002 \001(\t\022"
-    "\016\n\006target\030\003 \001(\t\"\\\n\006S_Chat\022\021\n\tplayer_id\030\001"
-    " \001(\004\022\014\n\004name\030\002 \001(\t\022 \n\004type\030\003 \001(\0162\022.Proto"
-    "col.ChatType\022\017\n\007message\030\004 \001(\t\"M\n\010ItemInf"
-    "o\022\017\n\007item_id\030\001 \001(\004\022\023\n\013template_id\030\002 \001(\r\022"
-    "\r\n\005count\030\003 \001(\005\022\014\n\004slot\030\004 \001(\005\"\034\n\tC_UseIte"
-    "m\022\017\n\007item_id\030\001 \001(\004\"6\n\021S_InventoryUpdate\022"
-    "!\n\005items\030\001 \003(\0132\022.Protocol.ItemInfo\"\036\n\013C_"
-    "EnterZone\022\017\n\007zone_id\030\001 \001(\r\"U\n\013S_EnterZon"
-    "e\022\017\n\007success\030\001 \001(\010\022\017\n\007zone_id\030\002 \001(\r\022$\n\ts"
-    "pawn_pos\030\003 \001(\0132\021.Protocol.Vector2\"\035\n\006C_P"
-    "ing\022\023\n\013client_time\030\001 \001(\004\"2\n\006S_Pong\022\023\n\013cl"
-    "ient_time\030\001 \001(\004\022\023\n\013server_time\030\002 \001(\004*(\n\007"
-    "MoveDir\022\010\n\004NONE\020\000\022\010\n\004LEFT\020\001\022\t\n\005RIGHT\020\002*."
-    "\n\nAttackType\022\t\n\005MELEE\020\000\022\n\n\006RANGED\020\001\022\t\n\005S"
-    "KILL\020\002*6\n\010ChatType\022\007\n\003ALL\020\000\022\013\n\007WHISPER\020\001"
-    "\022\t\n\005PARTY\020\002\022\t\n\005GUILD\020\003b\006proto3"
+    "is_jumping\030\007 \001(\010\022\023\n\013server_tick\030\010 \001(\r\022\024\n"
+    "\014is_crouching\030\t \001(\010\022\024\n\014is_on_ladder\030\n \001("
+    "\010\"~\n\010C_Attack\022\021\n\tinput_seq\030\001 \001(\r\022)\n\013atta"
+    "ck_type\030\002 \001(\0162\024.Protocol.AttackType\022\020\n\010s"
+    "kill_id\030\003 \001(\r\022\"\n\007aim_dir\030\004 \001(\0132\021.Protoco"
+    "l.Vector2\"\301\001\n\016S_AttackResult\022\023\n\013attacker"
+    "_id\030\001 \001(\004\022)\n\013attack_type\030\002 \001(\0162\024.Protoco"
+    "l.AttackType\022\020\n\010skill_id\030\003 \001(\r\022!\n\006origin"
+    "\030\004 \001(\0132\021.Protocol.Vector2\022\"\n\007aim_dir\030\005 \001"
+    "(\0132\021.Protocol.Vector2\022\026\n\016hit_target_ids\030"
+    "\006 \003(\004\"n\n\014S_TakeDamage\022\021\n\ttarget_id\030\001 \001(\004"
+    "\022\023\n\013attacker_id\030\002 \001(\004\022\016\n\006damage\030\003 \001(\005\022\021\n"
+    "\tremain_hp\030\004 \001(\005\022\023\n\013is_critical\030\005 \001(\010\"-\n"
+    "\005S_Die\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tkiller_id\030\002"
+    " \001(\004\"\r\n\013C_Resurrect\"Q\n\013S_Resurrect\022\021\n\tpl"
+    "ayer_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Protoc"
+    "ol.Vector2\022\n\n\002hp\030\003 \001(\005\"K\n\006C_Chat\022 \n\004type"
+    "\030\001 \001(\0162\022.Protocol.ChatType\022\017\n\007message\030\002 "
+    "\001(\t\022\016\n\006target\030\003 \001(\t\"\\\n\006S_Chat\022\021\n\tplayer_"
+    "id\030\001 \001(\004\022\014\n\004name\030\002 \001(\t\022 \n\004type\030\003 \001(\0162\022.P"
+    "rotocol.ChatType\022\017\n\007message\030\004 \001(\t\"M\n\010Ite"
+    "mInfo\022\017\n\007item_id\030\001 \001(\004\022\023\n\013template_id\030\002 "
+    "\001(\r\022\r\n\005count\030\003 \001(\005\022\014\n\004slot\030\004 \001(\005\"\034\n\tC_Us"
+    "eItem\022\017\n\007item_id\030\001 \001(\004\"6\n\021S_InventoryUpd"
+    "ate\022!\n\005items\030\001 \003(\0132\022.Protocol.ItemInfo\"\036"
+    "\n\013C_EnterZone\022\017\n\007zone_id\030\001 \001(\r\"U\n\013S_Ente"
+    "rZone\022\017\n\007success\030\001 \001(\010\022\017\n\007zone_id\030\002 \001(\r\022"
+    "$\n\tspawn_pos\030\003 \001(\0132\021.Protocol.Vector2\"\035\n"
+    "\006C_Ping\022\023\n\013client_time\030\001 \001(\004\"2\n\006S_Pong\022\023"
+    "\n\013client_time\030\001 \001(\004\022\023\n\013server_time\030\002 \001(\004"
+    "*(\n\007MoveDir\022\010\n\004NONE\020\000\022\010\n\004LEFT\020\001\022\t\n\005RIGHT"
+    "\020\002*.\n\nAttackType\022\t\n\005MELEE\020\000\022\n\n\006RANGED\020\001\022"
+    "\t\n\005SKILL\020\002*6\n\010ChatType\022\007\n\003ALL\020\000\022\013\n\007WHISP"
+    "ER\020\001\022\t\n\005PARTY\020\002\022\t\n\005GUILD\020\003b\006proto3"
 };
 static ::absl::once_flag descriptor_table_game_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_game_2eproto = {
     false,
     false,
-    2710,
+    2754,
     descriptor_table_protodef_game_2eproto,
     "game.proto",
     &descriptor_table_game_2eproto_once,
@@ -5444,9 +5451,9 @@ S_BroadcastMove::S_BroadcastMove(
                offsetof(Impl_, player_id_),
            reinterpret_cast<const char*>(&from._impl_) +
                offsetof(Impl_, player_id_),
-           offsetof(Impl_, server_tick_) -
+           offsetof(Impl_, is_on_ladder_) -
                offsetof(Impl_, player_id_) +
-               sizeof(Impl_::server_tick_));
+               sizeof(Impl_::is_on_ladder_));
 
   // @@protoc_insertion_point(copy_constructor:Protocol.S_BroadcastMove)
 }
@@ -5460,9 +5467,9 @@ inline void S_BroadcastMove::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
   ::memset(reinterpret_cast<char*>(&_impl_) +
                offsetof(Impl_, position_),
            0,
-           offsetof(Impl_, server_tick_) -
+           offsetof(Impl_, is_on_ladder_) -
                offsetof(Impl_, position_) +
-               sizeof(Impl_::server_tick_));
+               sizeof(Impl_::is_on_ladder_));
 }
 S_BroadcastMove::~S_BroadcastMove() {
   // @@protoc_insertion_point(destructor:Protocol.S_BroadcastMove)
@@ -5523,16 +5530,16 @@ S_BroadcastMove::GetClassData() const {
   return S_BroadcastMove_class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 8, 2, 0, 2>
+const ::_pbi::TcParseTable<4, 10, 2, 0, 2>
 S_BroadcastMove::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_._has_bits_),
     0, // no _extensions_
-    8, 56,  // max_field_number, fast_idx_mask
+    10, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967040,  // skipmap
+    4294966272,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    8,  // num_field_entries
+    10,  // num_field_entries
     2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     S_BroadcastMove_class_data_.base(),
@@ -5542,10 +5549,7 @@ S_BroadcastMove::_table_ = {
     ::_pbi::TcParser::GetTable<::Protocol::S_BroadcastMove>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // uint32 server_tick = 8;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(S_BroadcastMove, _impl_.server_tick_), 7>(),
-     {64, 7, 0,
-      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.server_tick_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // uint64 player_id = 1;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(S_BroadcastMove, _impl_.player_id_), 2>(),
      {8, 2, 0,
@@ -5574,6 +5578,23 @@ S_BroadcastMove::_table_ = {
     {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(S_BroadcastMove, _impl_.is_jumping_), 6>(),
      {56, 6, 0,
       PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_jumping_)}},
+    // uint32 server_tick = 8;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(S_BroadcastMove, _impl_.server_tick_), 8>(),
+     {64, 8, 0,
+      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.server_tick_)}},
+    // bool is_crouching = 9;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(S_BroadcastMove, _impl_.is_crouching_), 7>(),
+     {72, 7, 0,
+      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_crouching_)}},
+    // bool is_on_ladder = 10;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(S_BroadcastMove, _impl_.is_on_ladder_), 9>(),
+     {80, 9, 0,
+      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_on_ladder_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -5592,7 +5613,11 @@ S_BroadcastMove::_table_ = {
     // bool is_jumping = 7;
     {PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_jumping_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
     // uint32 server_tick = 8;
-    {PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.server_tick_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
+    {PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.server_tick_), _Internal::kHasBitsOffset + 8, 0, (0 | ::_fl::kFcOptional | ::_fl::kUInt32)},
+    // bool is_crouching = 9;
+    {PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_crouching_), _Internal::kHasBitsOffset + 7, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
+    // bool is_on_ladder = 10;
+    {PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_on_ladder_), _Internal::kHasBitsOffset + 9, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
   }},
   {{
       {::_pbi::TcParser::GetTable<::Protocol::Vector2>()},
@@ -5621,8 +5646,13 @@ PROTOBUF_NOINLINE void S_BroadcastMove::Clear() {
   }
   if (BatchCheckHasBit(cached_has_bits, 0x000000fcU)) {
     ::memset(&_impl_.player_id_, 0, static_cast<::size_t>(
-        reinterpret_cast<char*>(&_impl_.server_tick_) -
-        reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.server_tick_));
+        reinterpret_cast<char*>(&_impl_.is_crouching_) -
+        reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.is_crouching_));
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
+    ::memset(&_impl_.server_tick_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.is_on_ladder_) -
+        reinterpret_cast<char*>(&_impl_.server_tick_)) + sizeof(_impl_.is_on_ladder_));
   }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
@@ -5707,11 +5737,29 @@ PROTOBUF_NOINLINE void S_BroadcastMove::Clear() {
   }
 
   // uint32 server_tick = 8;
-  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+  if (CheckHasBit(cached_has_bits, 0x00000100U)) {
     if (this_._internal_server_tick() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
           8, this_._internal_server_tick(), target);
+    }
+  }
+
+  // bool is_crouching = 9;
+  if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+    if (this_._internal_is_crouching() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteBoolToArray(
+          9, this_._internal_is_crouching(), target);
+    }
+  }
+
+  // bool is_on_ladder = 10;
+  if (CheckHasBit(cached_has_bits, 0x00000200U)) {
+    if (this_._internal_is_on_ladder() != 0) {
+      target = stream->EnsureSpace(target);
+      target = ::_pbi::WireFormatLite::WriteBoolToArray(
+          10, this_._internal_is_on_ladder(), target);
     }
   }
 
@@ -5783,11 +5831,25 @@ PROTOBUF_NOINLINE void S_BroadcastMove::Clear() {
         total_size += 2;
       }
     }
-    // uint32 server_tick = 8;
+    // bool is_crouching = 9;
     if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+      if (this_._internal_is_crouching() != 0) {
+        total_size += 2;
+      }
+    }
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
+    // uint32 server_tick = 8;
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (this_._internal_server_tick() != 0) {
         total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
             this_._internal_server_tick());
+      }
+    }
+    // bool is_on_ladder = 10;
+    if (CheckHasBit(cached_has_bits, 0x00000200U)) {
+      if (this_._internal_is_on_ladder() != 0) {
+        total_size += 2;
       }
     }
   }
@@ -5853,8 +5915,20 @@ void S_BroadcastMove::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000080U)) {
+      if (from._internal_is_crouching() != 0) {
+        _this->_impl_.is_crouching_ = from._impl_.is_crouching_;
+      }
+    }
+  }
+  if (BatchCheckHasBit(cached_has_bits, 0x00000300U)) {
+    if (CheckHasBit(cached_has_bits, 0x00000100U)) {
       if (from._internal_server_tick() != 0) {
         _this->_impl_.server_tick_ = from._impl_.server_tick_;
+      }
+    }
+    if (CheckHasBit(cached_has_bits, 0x00000200U)) {
+      if (from._internal_is_on_ladder() != 0) {
+        _this->_impl_.is_on_ladder_ = from._impl_.is_on_ladder_;
       }
     }
   }
@@ -5876,8 +5950,8 @@ void S_BroadcastMove::InternalSwap(S_BroadcastMove* PROTOBUF_RESTRICT PROTOBUF_N
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.server_tick_)
-      + sizeof(S_BroadcastMove::_impl_.server_tick_)
+      PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.is_on_ladder_)
+      + sizeof(S_BroadcastMove::_impl_.is_on_ladder_)
       - PROTOBUF_FIELD_OFFSET(S_BroadcastMove, _impl_.position_)>(
           reinterpret_cast<char*>(&_impl_.position_),
           reinterpret_cast<char*>(&other->_impl_.position_));

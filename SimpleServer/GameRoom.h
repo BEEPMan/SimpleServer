@@ -29,6 +29,8 @@ public:
     void Chat(std::shared_ptr<Player> player, const std::string& message, int32_t type);
     void HandleLadderState(std::shared_ptr<Player> player, bool onLadder,
                            float px, float py, float vx, float vy);
+    void BroadcastAttack(std::shared_ptr<Player> attacker, uint32_t skillId,
+                         int attackType, float aimX, float aimY);
 
     // 20Hz 게임 루프 시작/종료
     void StartGameLoop();

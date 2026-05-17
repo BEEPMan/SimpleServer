@@ -107,6 +107,31 @@ void GameRoom::EnterGame(std::shared_ptr<Player> player, const std::string& name
     std::cout << "[Server] Player entered: " << name << "\n";
 }
 
+void GameRoom::BroadcastAttack(std::shared_ptr<Player> attacker, uint32_t skillId,
+                               int attackType, float aimX, float aimY)
+{
+    std::cout << "[Attack] BroadcastAttack: attacker=" << attacker->GetPlayerId()
+              << " name=" << attacker->GetName()
+              << " skillId=" << skillId
+              << " type=" << attackType
+              << " playerCount=" << _players.size() << "\n";
+
+    Protocol::S_AttackResult res;
+    res.set_attacker_id(attacker->GetPlayerId());
+    res.set_skill_id(skillId);
+    res.set_attack_type(static_cast<Protocol::AttackType>(attackType));
+    res.mutable_origin()->set_x(attacker->GetPhysicsState().pos.x);
+    res.mutable_origin()->set_y(attacker->GetPhysicsState().pos.y);
+    res.mutable_aim_dir()->set_x(aimX);
+    res.mutable_aim_dir()->set_y(aimY);
+
+    auto buf = MakeSendBuffer(MakePacketFromProto(OP_S_ATTACK_RESULT, res));
+    Broadcast(buf);
+
+    std::cout << "[Attack] S_AttackResult broadcast done: attacker=" << attacker->GetPlayerId()
+              << " recipients=" << _players.size() << "\n";
+}
+
 void GameRoom::Chat(std::shared_ptr<Player> player, const std::string& message, int32_t type)
 {
     Protocol::S_Chat res;
@@ -219,6 +244,8 @@ void GameRoom::TickAll(float /*dt*/)
             bcast.set_is_grounded(state.isGrounded);
             bcast.set_is_moving(state.isMoving);
             bcast.set_is_jumping(state.isJumping);
+            bcast.set_is_crouching(state.isCrouching);
+            bcast.set_is_on_ladder(state.isOnLadder);
             bcast.set_server_tick(_serverTick);
             Broadcast(MakeSendBuffer(MakePacketFromProto(OP_S_BROADCAST_MOVE, bcast)), player.get());
         }
@@ -410,6 +437,7 @@ void GameRoom::SimulatePlayer(Player& player, const InputCmd& cmd, float dt)
     // 사다리 물리 시뮬레이션 (서버 권위)
     if (s.isOnLadder)
     {
+        s.isCrouching = false;
         const float useDt = (cmd.deltaTime > 0.f && cmd.deltaTime < 0.1f) ? cmd.deltaTime : dt;
 
         // 점프 → 사다리 이탈 후 공중 물리
@@ -489,7 +517,8 @@ void GameRoom::SimulatePlayer(Player& player, const InputCmd& cmd, float dt)
     if (cmd.moveLeft)  moveX = -1.f;
     if (cmd.moveRight) moveX =  1.f;
 
-    s.isMoving = (moveX != 0.f);
+    s.isMoving    = (moveX != 0.f);
+    s.isCrouching = s.isGrounded && cmd.moveDown && !cmd.moveLeft && !cmd.moveRight && !cmd.jump;
     if      (moveX < 0.f)             s.dir = MoveDir::Left;
     else if (moveX > 0.f)             s.dir = MoveDir::Right;
     if (cmd.faceDir != MoveDir::None) s.dir = cmd.faceDir;

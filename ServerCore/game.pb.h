@@ -4833,7 +4833,9 @@ class S_BroadcastMove final : public ::google::protobuf::Message
     kIsGroundedFieldNumber = 5,
     kIsMovingFieldNumber = 6,
     kIsJumpingFieldNumber = 7,
+    kIsCrouchingFieldNumber = 9,
     kServerTickFieldNumber = 8,
+    kIsOnLadderFieldNumber = 10,
   };
   // .Protocol.Vector2 position = 2;
   bool has_position() const;
@@ -4915,6 +4917,16 @@ class S_BroadcastMove final : public ::google::protobuf::Message
   void _internal_set_is_jumping(bool value);
 
   public:
+  // bool is_crouching = 9;
+  void clear_is_crouching() ;
+  bool is_crouching() const;
+  void set_is_crouching(bool value);
+
+  private:
+  bool _internal_is_crouching() const;
+  void _internal_set_is_crouching(bool value);
+
+  public:
   // uint32 server_tick = 8;
   void clear_server_tick() ;
   ::uint32_t server_tick() const;
@@ -4925,11 +4937,21 @@ class S_BroadcastMove final : public ::google::protobuf::Message
   void _internal_set_server_tick(::uint32_t value);
 
   public:
+  // bool is_on_ladder = 10;
+  void clear_is_on_ladder() ;
+  bool is_on_ladder() const;
+  void set_is_on_ladder(bool value);
+
+  private:
+  bool _internal_is_on_ladder() const;
+  void _internal_set_is_on_ladder(bool value);
+
+  public:
   // @@protoc_insertion_point(class_scope:Protocol.S_BroadcastMove)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 8,
+  static const ::google::protobuf::internal::TcParseTable<4, 10,
                                    2, 0,
                                    2>
       _table_;
@@ -4958,7 +4980,9 @@ class S_BroadcastMove final : public ::google::protobuf::Message
     bool is_grounded_;
     bool is_moving_;
     bool is_jumping_;
+    bool is_crouching_;
     ::uint32_t server_tick_;
+    bool is_on_ladder_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -8552,7 +8576,7 @@ inline void S_BroadcastMove::clear_server_tick() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.server_tick_ = 0u;
   ClearHasBit(_impl_._has_bits_[0],
-                  0x00000080U);
+                  0x00000100U);
 }
 inline ::uint32_t S_BroadcastMove::server_tick() const {
   // @@protoc_insertion_point(field_get:Protocol.S_BroadcastMove.server_tick)
@@ -8560,7 +8584,7 @@ inline ::uint32_t S_BroadcastMove::server_tick() const {
 }
 inline void S_BroadcastMove::set_server_tick(::uint32_t value) {
   _internal_set_server_tick(value);
-  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  SetHasBit(_impl_._has_bits_[0], 0x00000100U);
   // @@protoc_insertion_point(field_set:Protocol.S_BroadcastMove.server_tick)
 }
 inline ::uint32_t S_BroadcastMove::_internal_server_tick() const {
@@ -8570,6 +8594,56 @@ inline ::uint32_t S_BroadcastMove::_internal_server_tick() const {
 inline void S_BroadcastMove::_internal_set_server_tick(::uint32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.server_tick_ = value;
+}
+
+// bool is_crouching = 9;
+inline void S_BroadcastMove::clear_is_crouching() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_crouching_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000080U);
+}
+inline bool S_BroadcastMove::is_crouching() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_BroadcastMove.is_crouching)
+  return _internal_is_crouching();
+}
+inline void S_BroadcastMove::set_is_crouching(bool value) {
+  _internal_set_is_crouching(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000080U);
+  // @@protoc_insertion_point(field_set:Protocol.S_BroadcastMove.is_crouching)
+}
+inline bool S_BroadcastMove::_internal_is_crouching() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_crouching_;
+}
+inline void S_BroadcastMove::_internal_set_is_crouching(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_crouching_ = value;
+}
+
+// bool is_on_ladder = 10;
+inline void S_BroadcastMove::clear_is_on_ladder() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_on_ladder_ = false;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000200U);
+}
+inline bool S_BroadcastMove::is_on_ladder() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_BroadcastMove.is_on_ladder)
+  return _internal_is_on_ladder();
+}
+inline void S_BroadcastMove::set_is_on_ladder(bool value) {
+  _internal_set_is_on_ladder(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000200U);
+  // @@protoc_insertion_point(field_set:Protocol.S_BroadcastMove.is_on_ladder)
+}
+inline bool S_BroadcastMove::_internal_is_on_ladder() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_on_ladder_;
+}
+inline void S_BroadcastMove::_internal_set_is_on_ladder(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_on_ladder_ = value;
 }
 
 // -------------------------------------------------------------------

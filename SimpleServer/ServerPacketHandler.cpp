@@ -102,17 +102,48 @@ bool ServerPacketHandler::HandleChat(Session& session, const Packet& pkt)
 
 bool ServerPacketHandler::HandleAttack(Session& session, const Packet& pkt)
 {
-    if (!_room) return false;
+    if (!_room)
+    {
+        std::cout << "[Attack] HandleAttack: room is null\n";
+        return false;
+    }
 
     Protocol::C_Attack req;
     if (!req.ParseFromArray(pkt.payload.data(), static_cast<int>(pkt.payload.size())))
+    {
+        std::cout << "[Attack] HandleAttack: proto parse failed\n";
         return false;
+    }
 
     auto& cs = static_cast<ClientSession&>(session);
     auto player = cs.GetPlayer();
-    if (!player || !player->IsEntered()) return true;
 
-    // TODO: 전투 판정 구현
+    if (!player)
+    {
+        std::cout << "[Attack] HandleAttack: player is null\n";
+        return true;
+    }
+    if (!player->IsEntered())
+    {
+        std::cout << "[Attack] HandleAttack: player not entered id=" << player->GetPlayerId() << "\n";
+        return true;
+    }
+
+    uint32_t skillId    = req.skill_id();
+    int      attackType = static_cast<int>(req.attack_type());
+    float    aimX       = req.has_aim_dir() ? req.aim_dir().x() : 0.f;
+    float    aimY       = req.has_aim_dir() ? req.aim_dir().y() : 0.f;
+
+    std::cout << "[Attack] HandleAttack: received from id=" << player->GetPlayerId()
+              << " name=" << player->GetName()
+              << " skillId=" << skillId
+              << " type=" << attackType
+              << " aimX=" << aimX << "\n";
+
+    _room->PostTask([room = _room, player, skillId, attackType, aimX, aimY]()
+    {
+        room->BroadcastAttack(player, skillId, attackType, aimX, aimY);
+    });
     return true;
 }
 

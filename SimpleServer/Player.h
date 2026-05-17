@@ -40,6 +40,7 @@ struct PhysicsState
     bool     isJumping  = false;
     bool     isGrounded       = true;
     bool     isOnLadder       = false;  // 사다리 상태 (서버 시뮬레이션)
+    bool     isCrouching      = false;  // 숙이기 상태
     float    ladderCenterX    = 0.f;    // 사다리 중심 X (월드 좌표)
     float    ladderMinY       = 0.f;    // 사다리 하단 Y (월드 좌표)
     float    ladderMaxY       = 0.f;    // 사다리 상단 Y (월드 좌표)
