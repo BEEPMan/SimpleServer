@@ -119,8 +119,8 @@ message C_InputCmd {
     bool    move_left  = 3;
     bool    move_right = 4;
     bool    jump       = 5;
-    bool    attack     = 6;
-    MoveDir face_dir   = 7;  // 캐릭터가 바라보는 방향
+    bool    drop_through = 6;  // 플로팅 플랫폼 하강 통과 신호
+    MoveDir face_dir     = 7;  // 캐릭터가 바라보는 방향
     bool    move_up    = 8;  // 사다리 상승
     bool    move_down  = 9;  // 사다리 하강
 }

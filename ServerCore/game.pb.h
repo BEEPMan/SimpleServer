@@ -3005,7 +3005,7 @@ class C_InputCmd final : public ::google::protobuf::Message
     kMoveLeftFieldNumber = 3,
     kMoveRightFieldNumber = 4,
     kJumpFieldNumber = 5,
-    kAttackFieldNumber = 6,
+    kDropThroughFieldNumber = 6,
     kFaceDirFieldNumber = 7,
     kMoveUpFieldNumber = 8,
     kMoveDownFieldNumber = 9,
@@ -3060,14 +3060,14 @@ class C_InputCmd final : public ::google::protobuf::Message
   void _internal_set_jump(bool value);
 
   public:
-  // bool attack = 6;
-  void clear_attack() ;
-  bool attack() const;
-  void set_attack(bool value);
+  // bool drop_through = 6;
+  void clear_drop_through() ;
+  bool drop_through() const;
+  void set_drop_through(bool value);
 
   private:
-  bool _internal_attack() const;
-  void _internal_set_attack(bool value);
+  bool _internal_drop_through() const;
+  void _internal_set_drop_through(bool value);
 
   public:
   // .Protocol.MoveDir face_dir = 7;
@@ -3131,7 +3131,7 @@ class C_InputCmd final : public ::google::protobuf::Message
     bool move_left_;
     bool move_right_;
     bool jump_;
-    bool attack_;
+    bool drop_through_;
     int face_dir_;
     bool move_up_;
     bool move_down_;
@@ -7767,29 +7767,29 @@ inline void C_InputCmd::_internal_set_jump(bool value) {
   _impl_.jump_ = value;
 }
 
-// bool attack = 6;
-inline void C_InputCmd::clear_attack() {
+// bool drop_through = 6;
+inline void C_InputCmd::clear_drop_through() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.attack_ = false;
+  _impl_.drop_through_ = false;
   ClearHasBit(_impl_._has_bits_[0],
                   0x00000020U);
 }
-inline bool C_InputCmd::attack() const {
-  // @@protoc_insertion_point(field_get:Protocol.C_InputCmd.attack)
-  return _internal_attack();
+inline bool C_InputCmd::drop_through() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_InputCmd.drop_through)
+  return _internal_drop_through();
 }
-inline void C_InputCmd::set_attack(bool value) {
-  _internal_set_attack(value);
+inline void C_InputCmd::set_drop_through(bool value) {
+  _internal_set_drop_through(value);
   SetHasBit(_impl_._has_bits_[0], 0x00000020U);
-  // @@protoc_insertion_point(field_set:Protocol.C_InputCmd.attack)
+  // @@protoc_insertion_point(field_set:Protocol.C_InputCmd.drop_through)
 }
-inline bool C_InputCmd::_internal_attack() const {
+inline bool C_InputCmd::_internal_drop_through() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.attack_;
+  return _impl_.drop_through_;
 }
-inline void C_InputCmd::_internal_set_attack(bool value) {
+inline void C_InputCmd::_internal_set_drop_through(bool value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.attack_ = value;
+  _impl_.drop_through_ = value;
 }
 
 // .Protocol.MoveDir face_dir = 7;

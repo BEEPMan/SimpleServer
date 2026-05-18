@@ -358,7 +358,7 @@ inline constexpr C_InputCmd::Impl_::Impl_(
         move_left_{false},
         move_right_{false},
         jump_{false},
-        attack_{false},
+        drop_through_{false},
         face_dir_{static_cast< ::Protocol::MoveDir >(0)},
         move_up_{false},
         move_down_{false} {}
@@ -887,7 +887,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.move_left_),
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.move_right_),
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.jump_),
-        PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.attack_),
+        PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.drop_through_),
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.face_dir_),
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.move_up_),
         PROTOBUF_FIELD_OFFSET(::Protocol::C_InputCmd, _impl_.move_down_),
@@ -1148,63 +1148,63 @@ const char descriptor_table_protodef_game_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIA
     "\001 \003(\004\"5\n\014S_PlayerList\022%\n\007players\030\001 \003(\0132\024"
     ".Protocol.PlayerInfo\"^\n\rC_LadderState\022\021\n"
     "\ton_ladder\030\001 \001(\010\022\r\n\005pos_x\030\002 \001(\002\022\r\n\005pos_y"
-    "\030\003 \001(\002\022\r\n\005vel_x\030\004 \001(\002\022\r\n\005vel_y\030\005 \001(\002\"\301\001\n"
+    "\030\003 \001(\002\022\r\n\005vel_x\030\004 \001(\002\022\r\n\005vel_y\030\005 \001(\002\"\307\001\n"
     "\nC_InputCmd\022\021\n\tinput_seq\030\001 \001(\r\022\022\n\ndelta_"
     "time\030\002 \001(\002\022\021\n\tmove_left\030\003 \001(\010\022\022\n\nmove_ri"
-    "ght\030\004 \001(\010\022\014\n\004jump\030\005 \001(\010\022\016\n\006attack\030\006 \001(\010\022"
-    "#\n\010face_dir\030\007 \001(\0162\021.Protocol.MoveDir\022\017\n\007"
-    "move_up\030\010 \001(\010\022\021\n\tmove_down\030\t \001(\010\"\200\002\n\rS_P"
-    "layerState\022\021\n\tplayer_id\030\001 \001(\004\022 \n\030last_pr"
-    "ocessed_input_seq\030\002 \001(\r\022#\n\010position\030\003 \001("
-    "\0132\021.Protocol.Vector2\022#\n\010velocity\030\004 \001(\0132\021"
-    ".Protocol.Vector2\022\023\n\013is_grounded\030\005 \001(\010\022\036"
-    "\n\003dir\030\006 \001(\0162\021.Protocol.MoveDir\022\021\n\tis_mov"
-    "ing\030\007 \001(\010\022\022\n\nis_jumping\030\010 \001(\010\022\024\n\014is_on_l"
-    "adder\030\t \001(\010\"\213\002\n\017S_BroadcastMove\022\021\n\tplaye"
-    "r_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Protocol."
-    "Vector2\022#\n\010velocity\030\003 \001(\0132\021.Protocol.Vec"
-    "tor2\022\036\n\003dir\030\004 \001(\0162\021.Protocol.MoveDir\022\023\n\013"
-    "is_grounded\030\005 \001(\010\022\021\n\tis_moving\030\006 \001(\010\022\022\n\n"
-    "is_jumping\030\007 \001(\010\022\023\n\013server_tick\030\010 \001(\r\022\024\n"
-    "\014is_crouching\030\t \001(\010\022\024\n\014is_on_ladder\030\n \001("
-    "\010\"~\n\010C_Attack\022\021\n\tinput_seq\030\001 \001(\r\022)\n\013atta"
-    "ck_type\030\002 \001(\0162\024.Protocol.AttackType\022\020\n\010s"
-    "kill_id\030\003 \001(\r\022\"\n\007aim_dir\030\004 \001(\0132\021.Protoco"
-    "l.Vector2\"\301\001\n\016S_AttackResult\022\023\n\013attacker"
-    "_id\030\001 \001(\004\022)\n\013attack_type\030\002 \001(\0162\024.Protoco"
-    "l.AttackType\022\020\n\010skill_id\030\003 \001(\r\022!\n\006origin"
-    "\030\004 \001(\0132\021.Protocol.Vector2\022\"\n\007aim_dir\030\005 \001"
-    "(\0132\021.Protocol.Vector2\022\026\n\016hit_target_ids\030"
-    "\006 \003(\004\"n\n\014S_TakeDamage\022\021\n\ttarget_id\030\001 \001(\004"
-    "\022\023\n\013attacker_id\030\002 \001(\004\022\016\n\006damage\030\003 \001(\005\022\021\n"
-    "\tremain_hp\030\004 \001(\005\022\023\n\013is_critical\030\005 \001(\010\"-\n"
-    "\005S_Die\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tkiller_id\030\002"
-    " \001(\004\"\r\n\013C_Resurrect\"Q\n\013S_Resurrect\022\021\n\tpl"
-    "ayer_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Protoc"
-    "ol.Vector2\022\n\n\002hp\030\003 \001(\005\"K\n\006C_Chat\022 \n\004type"
-    "\030\001 \001(\0162\022.Protocol.ChatType\022\017\n\007message\030\002 "
-    "\001(\t\022\016\n\006target\030\003 \001(\t\"\\\n\006S_Chat\022\021\n\tplayer_"
-    "id\030\001 \001(\004\022\014\n\004name\030\002 \001(\t\022 \n\004type\030\003 \001(\0162\022.P"
-    "rotocol.ChatType\022\017\n\007message\030\004 \001(\t\"M\n\010Ite"
-    "mInfo\022\017\n\007item_id\030\001 \001(\004\022\023\n\013template_id\030\002 "
-    "\001(\r\022\r\n\005count\030\003 \001(\005\022\014\n\004slot\030\004 \001(\005\"\034\n\tC_Us"
-    "eItem\022\017\n\007item_id\030\001 \001(\004\"6\n\021S_InventoryUpd"
-    "ate\022!\n\005items\030\001 \003(\0132\022.Protocol.ItemInfo\"\036"
-    "\n\013C_EnterZone\022\017\n\007zone_id\030\001 \001(\r\"U\n\013S_Ente"
-    "rZone\022\017\n\007success\030\001 \001(\010\022\017\n\007zone_id\030\002 \001(\r\022"
-    "$\n\tspawn_pos\030\003 \001(\0132\021.Protocol.Vector2\"\035\n"
-    "\006C_Ping\022\023\n\013client_time\030\001 \001(\004\"2\n\006S_Pong\022\023"
-    "\n\013client_time\030\001 \001(\004\022\023\n\013server_time\030\002 \001(\004"
-    "*(\n\007MoveDir\022\010\n\004NONE\020\000\022\010\n\004LEFT\020\001\022\t\n\005RIGHT"
-    "\020\002*.\n\nAttackType\022\t\n\005MELEE\020\000\022\n\n\006RANGED\020\001\022"
-    "\t\n\005SKILL\020\002*6\n\010ChatType\022\007\n\003ALL\020\000\022\013\n\007WHISP"
-    "ER\020\001\022\t\n\005PARTY\020\002\022\t\n\005GUILD\020\003b\006proto3"
+    "ght\030\004 \001(\010\022\014\n\004jump\030\005 \001(\010\022\024\n\014drop_through\030"
+    "\006 \001(\010\022#\n\010face_dir\030\007 \001(\0162\021.Protocol.MoveD"
+    "ir\022\017\n\007move_up\030\010 \001(\010\022\021\n\tmove_down\030\t \001(\010\"\200"
+    "\002\n\rS_PlayerState\022\021\n\tplayer_id\030\001 \001(\004\022 \n\030l"
+    "ast_processed_input_seq\030\002 \001(\r\022#\n\010positio"
+    "n\030\003 \001(\0132\021.Protocol.Vector2\022#\n\010velocity\030\004"
+    " \001(\0132\021.Protocol.Vector2\022\023\n\013is_grounded\030\005"
+    " \001(\010\022\036\n\003dir\030\006 \001(\0162\021.Protocol.MoveDir\022\021\n\t"
+    "is_moving\030\007 \001(\010\022\022\n\nis_jumping\030\010 \001(\010\022\024\n\014i"
+    "s_on_ladder\030\t \001(\010\"\213\002\n\017S_BroadcastMove\022\021\n"
+    "\tplayer_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021.Pro"
+    "tocol.Vector2\022#\n\010velocity\030\003 \001(\0132\021.Protoc"
+    "ol.Vector2\022\036\n\003dir\030\004 \001(\0162\021.Protocol.MoveD"
+    "ir\022\023\n\013is_grounded\030\005 \001(\010\022\021\n\tis_moving\030\006 \001"
+    "(\010\022\022\n\nis_jumping\030\007 \001(\010\022\023\n\013server_tick\030\010 "
+    "\001(\r\022\024\n\014is_crouching\030\t \001(\010\022\024\n\014is_on_ladde"
+    "r\030\n \001(\010\"~\n\010C_Attack\022\021\n\tinput_seq\030\001 \001(\r\022)"
+    "\n\013attack_type\030\002 \001(\0162\024.Protocol.AttackTyp"
+    "e\022\020\n\010skill_id\030\003 \001(\r\022\"\n\007aim_dir\030\004 \001(\0132\021.P"
+    "rotocol.Vector2\"\301\001\n\016S_AttackResult\022\023\n\013at"
+    "tacker_id\030\001 \001(\004\022)\n\013attack_type\030\002 \001(\0162\024.P"
+    "rotocol.AttackType\022\020\n\010skill_id\030\003 \001(\r\022!\n\006"
+    "origin\030\004 \001(\0132\021.Protocol.Vector2\022\"\n\007aim_d"
+    "ir\030\005 \001(\0132\021.Protocol.Vector2\022\026\n\016hit_targe"
+    "t_ids\030\006 \003(\004\"n\n\014S_TakeDamage\022\021\n\ttarget_id"
+    "\030\001 \001(\004\022\023\n\013attacker_id\030\002 \001(\004\022\016\n\006damage\030\003 "
+    "\001(\005\022\021\n\tremain_hp\030\004 \001(\005\022\023\n\013is_critical\030\005 "
+    "\001(\010\"-\n\005S_Die\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tkille"
+    "r_id\030\002 \001(\004\"\r\n\013C_Resurrect\"Q\n\013S_Resurrect"
+    "\022\021\n\tplayer_id\030\001 \001(\004\022#\n\010position\030\002 \001(\0132\021."
+    "Protocol.Vector2\022\n\n\002hp\030\003 \001(\005\"K\n\006C_Chat\022 "
+    "\n\004type\030\001 \001(\0162\022.Protocol.ChatType\022\017\n\007mess"
+    "age\030\002 \001(\t\022\016\n\006target\030\003 \001(\t\"\\\n\006S_Chat\022\021\n\tp"
+    "layer_id\030\001 \001(\004\022\014\n\004name\030\002 \001(\t\022 \n\004type\030\003 \001"
+    "(\0162\022.Protocol.ChatType\022\017\n\007message\030\004 \001(\t\""
+    "M\n\010ItemInfo\022\017\n\007item_id\030\001 \001(\004\022\023\n\013template"
+    "_id\030\002 \001(\r\022\r\n\005count\030\003 \001(\005\022\014\n\004slot\030\004 \001(\005\"\034"
+    "\n\tC_UseItem\022\017\n\007item_id\030\001 \001(\004\"6\n\021S_Invent"
+    "oryUpdate\022!\n\005items\030\001 \003(\0132\022.Protocol.Item"
+    "Info\"\036\n\013C_EnterZone\022\017\n\007zone_id\030\001 \001(\r\"U\n\013"
+    "S_EnterZone\022\017\n\007success\030\001 \001(\010\022\017\n\007zone_id\030"
+    "\002 \001(\r\022$\n\tspawn_pos\030\003 \001(\0132\021.Protocol.Vect"
+    "or2\"\035\n\006C_Ping\022\023\n\013client_time\030\001 \001(\004\"2\n\006S_"
+    "Pong\022\023\n\013client_time\030\001 \001(\004\022\023\n\013server_time"
+    "\030\002 \001(\004*(\n\007MoveDir\022\010\n\004NONE\020\000\022\010\n\004LEFT\020\001\022\t\n"
+    "\005RIGHT\020\002*.\n\nAttackType\022\t\n\005MELEE\020\000\022\n\n\006RAN"
+    "GED\020\001\022\t\n\005SKILL\020\002*6\n\010ChatType\022\007\n\003ALL\020\000\022\013\n"
+    "\007WHISPER\020\001\022\t\n\005PARTY\020\002\022\t\n\005GUILD\020\003b\006proto3"
 };
 static ::absl::once_flag descriptor_table_game_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_game_2eproto = {
     false,
     false,
-    2754,
+    2760,
     descriptor_table_protodef_game_2eproto,
     "game.proto",
     &descriptor_table_game_2eproto_once,
@@ -4529,10 +4529,10 @@ C_InputCmd::_table_ = {
     {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(C_InputCmd, _impl_.jump_), 4>(),
      {40, 4, 0,
       PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.jump_)}},
-    // bool attack = 6;
-    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(C_InputCmd, _impl_.attack_), 5>(),
+    // bool drop_through = 6;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(C_InputCmd, _impl_.drop_through_), 5>(),
      {48, 5, 0,
-      PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.attack_)}},
+      PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.drop_through_)}},
     // .Protocol.MoveDir face_dir = 7;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(C_InputCmd, _impl_.face_dir_), 6>(),
      {56, 6, 0,
@@ -4564,8 +4564,8 @@ C_InputCmd::_table_ = {
     {PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.move_right_), _Internal::kHasBitsOffset + 3, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
     // bool jump = 5;
     {PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.jump_), _Internal::kHasBitsOffset + 4, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
-    // bool attack = 6;
-    {PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.attack_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
+    // bool drop_through = 6;
+    {PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.drop_through_), _Internal::kHasBitsOffset + 5, 0, (0 | ::_fl::kFcOptional | ::_fl::kBool)},
     // .Protocol.MoveDir face_dir = 7;
     {PROTOBUF_FIELD_OFFSET(C_InputCmd, _impl_.face_dir_), _Internal::kHasBitsOffset + 6, 0, (0 | ::_fl::kFcOptional | ::_fl::kOpenEnum)},
     // bool move_up = 8;
@@ -4659,12 +4659,12 @@ PROTOBUF_NOINLINE void C_InputCmd::Clear() {
     }
   }
 
-  // bool attack = 6;
+  // bool drop_through = 6;
   if (CheckHasBit(cached_has_bits, 0x00000020U)) {
-    if (this_._internal_attack() != 0) {
+    if (this_._internal_drop_through() != 0) {
       target = stream->EnsureSpace(target);
       target = ::_pbi::WireFormatLite::WriteBoolToArray(
-          6, this_._internal_attack(), target);
+          6, this_._internal_drop_through(), target);
     }
   }
 
@@ -4752,9 +4752,9 @@ PROTOBUF_NOINLINE void C_InputCmd::Clear() {
         total_size += 2;
       }
     }
-    // bool attack = 6;
+    // bool drop_through = 6;
     if (CheckHasBit(cached_has_bits, 0x00000020U)) {
-      if (this_._internal_attack() != 0) {
+      if (this_._internal_drop_through() != 0) {
         total_size += 2;
       }
     }
@@ -4825,8 +4825,8 @@ void C_InputCmd::MergeImpl(::google::protobuf::MessageLite& to_msg,
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000020U)) {
-      if (from._internal_attack() != 0) {
-        _this->_impl_.attack_ = from._impl_.attack_;
+      if (from._internal_drop_through() != 0) {
+        _this->_impl_.drop_through_ = from._impl_.drop_through_;
       }
     }
     if (CheckHasBit(cached_has_bits, 0x00000040U)) {
